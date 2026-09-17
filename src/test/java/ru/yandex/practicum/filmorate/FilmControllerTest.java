@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -27,6 +28,9 @@ class FilmControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private FilmController filmController;
 
     private static Stream<Arguments> provideInvalidFilms() {
         Film blankName = createValidFilm();
@@ -59,6 +63,11 @@ class FilmControllerTest {
         film.setReleaseDate(LocalDate.of(2000, 5, 1));
         film.setDuration(155);
         return film;
+    }
+
+    @BeforeEach
+    void setUp() {
+        filmController.deleteAllFilms();
     }
 
     @Test
