@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.controller.UserController;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
 import java.util.stream.Stream;
@@ -31,6 +32,9 @@ class UserControllerTest {
 
     @Autowired
     private UserController userController;
+
+    @Autowired
+    private InMemoryUserStorage userStorage;
 
     private static Stream<Arguments> provideInvalidUsers() {
         User invalidEmail = createValidUser();
@@ -65,7 +69,7 @@ class UserControllerTest {
 
     @BeforeEach
     void setUp() {
-        userController.deleteAllUsers();
+        userStorage.deleteAllUsers();
     }
 
     @Test

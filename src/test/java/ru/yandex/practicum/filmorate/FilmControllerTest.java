@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 
 import java.time.LocalDate;
 import java.util.stream.Stream;
@@ -31,6 +32,9 @@ class FilmControllerTest {
 
     @Autowired
     private FilmController filmController;
+
+    @Autowired
+    private InMemoryFilmStorage inMemoryFilmStorage;
 
     private static Stream<Arguments> provideInvalidFilms() {
         Film blankName = createValidFilm();
@@ -67,7 +71,7 @@ class FilmControllerTest {
 
     @BeforeEach
     void setUp() {
-        filmController.deleteAllFilms();
+        inMemoryFilmStorage.deleteAllFilms();
     }
 
     @Test
