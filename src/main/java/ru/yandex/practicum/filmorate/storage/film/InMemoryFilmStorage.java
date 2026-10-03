@@ -38,6 +38,7 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     public void deleteAllFilms() {
         films.clear();
+        currentId = 0;
     }
 
 }

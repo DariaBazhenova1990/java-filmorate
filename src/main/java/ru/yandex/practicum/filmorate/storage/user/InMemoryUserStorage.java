@@ -35,5 +35,6 @@ public class InMemoryUserStorage implements UserStorage {
 
     public void deleteAllUsers() {
         users.clear();
+        currentId = 0;
     }
 }
