@@ -57,13 +57,13 @@ public class UserService {
 
     public User doFriends(Long id, Long friendId) {
         log.info("Получен запрос на добавление в друзья. ID пользователя: {}. ID друга: {}", id, friendId);
-        checkPairExistence(id, friendId);
+        isValidUserPair(id, friendId);
         return userStorage.doFriends(id, friendId);
     }
 
     public User undoFriends(Long id, Long friendId) {
         log.info("Получен запрос на удаление из друзей. ID пользователя: {}. ID друга: {}", id, friendId);
-        checkPairExistence(id, friendId);
+        isValidUserPair(id, friendId);
         return userStorage.undoFriends(id, friendId);
     }
 
@@ -78,10 +78,11 @@ public class UserService {
 
     public Collection<User> getCommonFriends(Long id, Long otherId) {
         log.info("Получение списка общих друзей для пользователей с ID {} и ID {}", id, otherId);
+        isValidUserPair(id, otherId);
         return userStorage.getCommonFriends(id, otherId);
     }
 
-    private void checkPairExistence(Long id, Long friendId) {
+    private void isValidUserPair(Long id, Long friendId) {
         Optional<User> user = userStorage.findById(id);
         Optional<User> friend = userStorage.findById(friendId);
 
@@ -91,6 +92,11 @@ public class UserService {
             if (friend.isEmpty()) missingIds.add(friendId);
             log.warn("Ошибка поиска: не найдены пользователи с ID: {}", missingIds);
             throw new NotFoundException("Пользователи с id " + missingIds + " не найдены");
+        }
+
+        if (user.equals(friend)) {
+            log.warn("Ошибка бизнес-логики: пользователи {} и {} не уникальны", id, friendId);
+            throw new ValidationException("Пользователи не уникальны. Переданные ID: " + id + ", " + friendId);
         }
     }
 }
