@@ -8,7 +8,10 @@ import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -49,6 +52,45 @@ public class UserService {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
             log.info("У пользователя с логином {} не указано имя. В качестве имени установлен логин.", user.getLogin());
+        }
+    }
+
+    public User doFriends(Long id, Long friendId) {
+        log.info("Получен запрос на добавление в друзья. ID пользователя: {}. ID друга: {}", id, friendId);
+        checkPairExistance(id, friendId);
+        return userStorage.doFriends(id, friendId);
+    }
+
+    public User undoFriends(Long id, Long friendId) {
+        log.info("Получен запрос на удаление из друзей. ID пользователя: {}. ID друга: {}", id, friendId);
+        checkPairExistance(id, friendId);
+        return userStorage.undoFriends(id, friendId);
+    }
+
+    public Collection<User> getFriends(Long id) {
+        log.info("Получение списка друзей для пользователя с ID {}", id);
+        if(userStorage.findById(id).isEmpty()) {
+            log.warn("Ошибка поиска: не найден пользователь с ID: {}", id);
+            throw new NotFoundException("Пользователь с id " + id + " не найден");
+        }
+        return userStorage.getFriends(id);
+    }
+
+    public Collection<User> getCommonFriends(Long id, Long otherId) {
+        log.info("Получение списка общих друзей для пользователей с ID {} и ID {}", id, otherId);
+        return userStorage.getCommonFriends(id, otherId);
+    }
+
+    private void checkPairExistance(Long id, Long friendId) {
+        Optional<User> user = userStorage.findById(id);
+        Optional<User> friend = userStorage.findById(friendId);
+
+        if (user.isEmpty() || friend.isEmpty()) {
+            List<Long> missingIds = new ArrayList<>();
+            if (user.isEmpty()) missingIds.add(id);
+            if (friend.isEmpty()) missingIds.add(friendId);
+            log.warn("Ошибка поиска: не найдены пользователи с ID: {}", missingIds);
+            throw new NotFoundException("Пользователи с id " + missingIds + " не найдены");
         }
     }
 }

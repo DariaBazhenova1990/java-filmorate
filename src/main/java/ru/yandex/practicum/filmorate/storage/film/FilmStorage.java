@@ -14,4 +14,9 @@ public interface FilmStorage {
 
     Optional<Film> findById(Long id);
 
+    Film likeFilm(Long id, Long userId);
+
+    Film unlikeFilm(Long id, Long userId);
+
+    Collection<Film> getPopular(int count);
 }

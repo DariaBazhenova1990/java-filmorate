@@ -29,4 +29,19 @@ public class FilmController {
         return filmService.update(newFilm);
     }
 
+    @PutMapping("/{id}/like/{userId}")
+    public Film likeFilm(@PathVariable("id") Long id, @PathVariable("userId") Long userId) {
+        return filmService.likeFilm(id, userId);
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public Film unlikeFilm(@PathVariable("id") Long id, @PathVariable("userId") Long userId) {
+        return filmService.unlikeFilm(id, userId);
+    }
+
+    @GetMapping("/popular")
+    public Collection<Film> getPopular(@RequestParam(defaultValue = "10") int count) {
+        return filmService.getPopular(count);
+    }
+
 }

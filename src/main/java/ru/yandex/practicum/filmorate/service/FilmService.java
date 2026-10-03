@@ -7,6 +7,7 @@ import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Collection;
 
@@ -15,6 +16,7 @@ import java.util.Collection;
 @RequiredArgsConstructor
 public class FilmService {
     private final FilmStorage filmStorage;
+    private final UserStorage userStorage;
 
     public Collection<Film> getAll() {
         log.info("Получение списка всех фильмов");
@@ -41,5 +43,40 @@ public class FilmService {
         Film oldFilm = filmStorage.update(newFilm);
         log.info("Фильм с ID: {} успешно обновлен", oldFilm.getId());
         return oldFilm;
+    }
+
+    public Film likeFilm(Long id, Long userId) {
+        log.info("Получен запрос на добавление лайка для фильма с ID: {}", id);
+        if (filmStorage.findById(id).isEmpty()) {
+            log.warn("Ошибка добавления лайка фильма: фильм с ID {} не найден", id);
+            throw new NotFoundException("Фильм с id = " + id + " не найден");
+        }
+        if (userStorage.findById(userId).isEmpty()) {
+            log.warn("Ошибка добавления лайка фильма: пользователь с ID {} не найден", id);
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
+        }
+        Film likedFilm = filmStorage.likeFilm(id, userId);
+        log.info("Пользователь с ID: {} успешно лайкнул фильм с ID {}", userId, id);
+        return likedFilm;
+    }
+
+    public Film unlikeFilm(Long id, Long userId) {
+        log.info("Получен запрос на удаление лайка для фильма с ID: {}", id);
+        if (filmStorage.findById(id).isEmpty()) {
+            log.warn("Ошибка удаления лайка фильма: фильм с ID {} не найден", id);
+            throw new NotFoundException("Фильм с id = " + id + " не найден");
+        }
+        if (userStorage.findById(userId).isEmpty()) {
+            log.warn("Ошибка удаления лайка фильма: пользователь с ID {} не найден", userId);
+            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
+        }
+        Film unlikedFilm = filmStorage.unlikeFilm(id, userId);
+        log.info("Пользователь с ID: {} успешно отменил лайк фильма с ID {}", userId, id);
+        return unlikedFilm;
+    }
+
+    public Collection<Film> getPopular(int count) {
+        log.info("Получение списка популярных фильмов");
+        return filmStorage.getPopular(count);
     }
 }

@@ -33,6 +33,56 @@ public class InMemoryUserStorage implements UserStorage {
         return Optional.ofNullable(users.get(id));
     }
 
+    @Override
+    public User doFriends(Long id, Long friendId) {
+        User user = users.get(id);
+        User friend = users.get(friendId);
+        if (user.getFriends() == null) {
+            user.setFriends(new HashSet<>());
+        }
+        user.getFriends().add(friendId);
+        if (friend.getFriends() == null) {
+            friend.setFriends(new HashSet<>());
+        }
+        friend.getFriends().add(id);
+        return user;
+    }
+
+    @Override
+    public User undoFriends(Long id, Long friendId) {
+        User user = users.get(id);
+        User friend = users.get(friendId);
+        if (user.getFriends() != null) {
+            user.getFriends().remove(friendId);
+        }
+        if (friend.getFriends() != null) {
+            friend.getFriends().remove(id);
+        }
+        return user;
+    }
+
+    @Override
+    public Collection<User> getFriends(Long id) {
+        return Optional.ofNullable(users.get(id))
+                .map(User::getFriends)
+                .orElse(Collections.emptySet())
+                .stream()
+                .map(users::get)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    @Override
+    public Collection<User> getCommonFriends(Long id, Long otherId) {
+        User user = users.get(id);
+        User otherUser = users.get(otherId);
+
+        return user.getFriends().stream()
+                .filter(otherUser.getFriends()::contains)
+                .map(users::get)
+                .toList();
+    }
+
     public void deleteAllUsers() {
         users.clear();
         currentId = 0;
