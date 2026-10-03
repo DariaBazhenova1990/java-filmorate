@@ -57,19 +57,19 @@ public class UserService {
 
     public User doFriends(Long id, Long friendId) {
         log.info("Получен запрос на добавление в друзья. ID пользователя: {}. ID друга: {}", id, friendId);
-        checkPairExistance(id, friendId);
+        checkPairExistence(id, friendId);
         return userStorage.doFriends(id, friendId);
     }
 
     public User undoFriends(Long id, Long friendId) {
         log.info("Получен запрос на удаление из друзей. ID пользователя: {}. ID друга: {}", id, friendId);
-        checkPairExistance(id, friendId);
+        checkPairExistence(id, friendId);
         return userStorage.undoFriends(id, friendId);
     }
 
     public Collection<User> getFriends(Long id) {
         log.info("Получение списка друзей для пользователя с ID {}", id);
-        if(userStorage.findById(id).isEmpty()) {
+        if (userStorage.findById(id).isEmpty()) {
             log.warn("Ошибка поиска: не найден пользователь с ID: {}", id);
             throw new NotFoundException("Пользователь с id " + id + " не найден");
         }
@@ -81,7 +81,7 @@ public class UserService {
         return userStorage.getCommonFriends(id, otherId);
     }
 
-    private void checkPairExistance(Long id, Long friendId) {
+    private void checkPairExistence(Long id, Long friendId) {
         Optional<User> user = userStorage.findById(id);
         Optional<User> friend = userStorage.findById(friendId);
 
