@@ -8,7 +8,7 @@ import java.util.Set;
 
 @Data
 public class User {
-    private Long id;
+    private long id;
 
     @NotBlank(message = "Электронная почта не может быть пустой")
     @Email(message = "Электронная почта должна содержать символ @ и соответствовать формату")
