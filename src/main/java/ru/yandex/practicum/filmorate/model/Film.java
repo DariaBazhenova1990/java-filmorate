@@ -10,6 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Data
+@Valid
 public class Film {
     private long id;
 
@@ -30,7 +31,6 @@ public class Film {
 
     private Set<Genre> genres = new LinkedHashSet<>();
 
-    @Valid
     private Mpa mpa;
 
 }

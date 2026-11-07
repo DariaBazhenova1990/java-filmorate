@@ -11,9 +11,11 @@ import ru.yandex.practicum.filmorate.dto.MpaDto;
 import ru.yandex.practicum.filmorate.validator.MinimumDate;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Data
+@Valid
 public class NewFilmRequest {
     @NotBlank(message = "Название не может быть пустым")
     private String name;
@@ -28,9 +30,7 @@ public class NewFilmRequest {
     @Positive(message = "Продолжительность фильма должна быть положительным числом")
     private int duration;
 
-    @Valid
-    private Set<GenreDto> genres;
+    private Set<GenreDto> genres = new LinkedHashSet<>();
 
-    @Valid
     private MpaDto mpa;
 }

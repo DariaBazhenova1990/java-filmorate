@@ -34,10 +34,11 @@ public class FilmRepository extends BaseRepository<Film> {
     private static final String REMOVE_LIKE_QUERY =
             "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?;";
     private static final String FIND_GENRES_BY_FILM_ID_QUERY =
-            "SELECT g.id, g.name FROM film_genres fg " +
+            "SELECT g.id, g.name " +
+                    "FROM film_genres fg " +
                     "JOIN genres g ON fg.genre_id = g.id " +
                     "WHERE fg.film_id = ? " +
-                    "ORDER BY g.id DESC;";
+                    "ORDER BY g.id ASC;";
     private final JdbcTemplate jdbc;
     private final FilmGenresRepository filmGenresRepository; // Добавляем репозиторий жанров
 
