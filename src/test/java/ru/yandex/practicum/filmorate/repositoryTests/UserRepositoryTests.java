@@ -34,7 +34,7 @@ class UserRepositoryTests {
         User savedUser = userStorage.create(newUser);
         long generatedId = savedUser.getId();
 
-        Optional<User> userOptional = userStorage.findById(generatedId); // Используем long-литерал 1L
+        Optional<User> userOptional = userStorage.findById(generatedId);
 
         assertThat(userOptional)
                 .isPresent()

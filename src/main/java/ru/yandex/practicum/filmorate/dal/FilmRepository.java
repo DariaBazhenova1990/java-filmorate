@@ -40,7 +40,7 @@ public class FilmRepository extends BaseRepository<Film> {
                     "WHERE fg.film_id = ? " +
                     "ORDER BY g.id ASC;";
     private final JdbcTemplate jdbc;
-    private final FilmGenresRepository filmGenresRepository; // Добавляем репозиторий жанров
+    private final FilmGenresRepository filmGenresRepository;
 
     public FilmRepository(JdbcTemplate jdbc, RowMapper<Film> mapper, FilmGenresRepository filmGenresRepository) {
         super(jdbc, mapper, Film.class);
