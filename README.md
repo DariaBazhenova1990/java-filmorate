@@ -70,6 +70,37 @@
 | `user_id` (PK, FK)   | BIGINT     | Идентификатор инициатора дружбы (ссылка на `users.id`)          |
 | `friend_id` (PK, FK) | BIGINT     | Идентификатор подтверждающего друга (ссылка на `users.id`)      |
 
-## Примеры запросов
 
-TBD
+## Примеры запросов
+```
+SELECT * FROM users;
+SELECT * FROM users WHERE id = ?;
+
+INSERT INTO users(email, login, name, birthday)
+VALUES (?, ?, ?, ?);
+
+UPDATE users
+SET email = ?, login = ?, name = ?, birthday = ?
+WHERE id = ?;
+
+INSERT INTO film_likes (film_id, user_id)
+VALUES (?, ?);
+
+DELETE FROM film_likes WHERE film_id = ? AND user_id = ?;
+
+SELECT u.* 
+FROM friends AS f
+LEFT JOIN users AS u ON f.friend_id = u.id
+WHERE f.user_id = ?;
+                    
+SELECT u.* 
+FROM users AS u 
+JOIN friends AS f1 ON u.id = f1.friend_id 
+JOIN friends AS f2 ON f1.friend_id = f2.friend_id 
+WHERE f1.user_id = ? AND f2.user_id = ?;
+
+INSERT INTO film_genres (film_id, genre_id)
+VALUES (?, ?);
+
+DELETE FROM film_genres WHERE film_id = ?;
+```
