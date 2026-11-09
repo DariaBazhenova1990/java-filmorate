@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import ru.yandex.practicum.filmorate.dal.FilmRepository;
 import ru.yandex.practicum.filmorate.dal.FilmGenresRepository;
 import ru.yandex.practicum.filmorate.dal.mappers.FilmRowMapper;
+import ru.yandex.practicum.filmorate.dal.mappers.GenreRowMapper;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
@@ -20,7 +21,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @JdbcTest
 @AutoConfigureTestDatabase
-@Import({FilmRepository.class, FilmRowMapper.class, FilmGenresRepository.class})
+@Import({FilmRepository.class, FilmRowMapper.class, FilmGenresRepository.class, GenreRowMapper.class})
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class FilmRepositoryTests {
 
