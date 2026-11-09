@@ -11,7 +11,9 @@ import ru.yandex.practicum.filmorate.dto.MpaDto;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.mapper.FilmMapper;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,11 +52,12 @@ public class FilmService {
     public FilmDto create(NewFilmRequest newFilm) {
         log.info("Получен запрос на добавление нового фильма: {}", newFilm.getName());
         checkMpa(newFilm.getMpa());
-        checkGenres(newFilm.getGenres());
-
+        List<Genre> genres = checkAndGetGenres(newFilm.getGenres());
         Film film = FilmMapper.mapToFilm(newFilm);
+
         film = filmRepository.create(film);
-        film = filmGenresRepository.update(film);
+        film = filmGenresRepository.update(film, genres);
+
         log.info("Фильм успешно добавлен. Присвоен ID: {}", film.getId());
 
         return FilmMapper.mapToFilmDto(film);
@@ -67,13 +70,22 @@ public class FilmService {
         }
     }
 
-    private void checkGenres(Set<GenreDto> genres) {
-        for (GenreDto genre : genres) {
-            if (genreRepository.getGenreById(genre.getId()).isEmpty()) {
-                log.warn("Ошибка поиска: Жанр с ID {} не найден", genre.getId());
-                throw new NotFoundException("Жанр с id = " + genre.getId() + " не найден");
-            }
+    private List<Genre> checkAndGetGenres(Set<GenreDto> genres) {
+        if (genres == null || genres.isEmpty()) {
+            return null;
         }
+
+        List<Integer> genreIds = new ArrayList<>();
+        for (GenreDto genre : genres) genreIds.add(genre.getId());
+
+        List<Genre> existedGenres = genreRepository.getManyGenresByIds(genreIds);
+
+        if (existedGenres.size() != genreIds.size()) {
+            log.warn("Некоторые жанры не найдены");
+            throw new NotFoundException("Некоторые жанры не найдены");
+        }
+        return existedGenres;
+
     }
 
     public FilmDto update(UpdateFilmRequest updateRequest) {
@@ -86,9 +98,10 @@ public class FilmService {
                             return new NotFoundException("Фильм с id = " + filmId + " не найден");
                         }
                 );
+        List<Genre> genres = checkAndGetGenres(updateRequest.getGenres());
         film = filmRepository.update(film);
-        film = filmGenresRepository.update(film);
-        log.info("Фильм с ID: {} успешно обновлен", filmId);
+        film = filmGenresRepository.update(film, genres);
+        log.info("Фильм с ID: {} успешно обновлен", film.getId());
         return FilmMapper.mapToFilmDto(film);
     }
 

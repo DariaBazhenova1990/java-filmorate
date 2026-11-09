@@ -5,7 +5,6 @@ import lombok.NoArgsConstructor;
 import ru.yandex.practicum.filmorate.dto.FilmDto.FilmDto;
 import ru.yandex.practicum.filmorate.dto.FilmDto.NewFilmRequest;
 import ru.yandex.practicum.filmorate.dto.FilmDto.UpdateFilmRequest;
-import ru.yandex.practicum.filmorate.dto.GenreDto;
 import ru.yandex.practicum.filmorate.dto.MpaDto;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
@@ -53,12 +52,7 @@ public class FilmMapper {
 
         if (film.getGenres() != null) {
             dto.setGenres(film.getGenres().stream()
-                    .map(genre -> {
-                        GenreDto genreDto = new GenreDto();
-                        genreDto.setId(genre.getId());
-                        genreDto.setName(genre.getName());
-                        return genreDto;
-                    })
+                    .map(GengeMapper::mapToGenreDto)
                     .collect(Collectors.toCollection(LinkedHashSet::new)));
         }
 

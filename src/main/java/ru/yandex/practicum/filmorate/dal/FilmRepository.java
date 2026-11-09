@@ -2,15 +2,17 @@ package ru.yandex.practicum.filmorate.dal;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.dal.mappers.GenreRowMapper;
 import ru.yandex.practicum.filmorate.exceptions.InternalServerException;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Repository
 public class FilmRepository extends BaseRepository<Film> {
@@ -33,25 +35,39 @@ public class FilmRepository extends BaseRepository<Film> {
             "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?);";
     private static final String REMOVE_LIKE_QUERY =
             "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?;";
-    private static final String FIND_GENRES_BY_FILM_ID_QUERY =
-            "SELECT g.id, g.name " +
-                    "FROM film_genres fg " +
-                    "JOIN genres g ON fg.genre_id = g.id " +
+    private static final String FIND_GENRES_BY_FILMS_ID_QUERY =
+            "SELECT g.id, g.name, fg.film_id " +
+                    "FROM genres g " +
+                    "JOIN film_genres fg ON g.id = fg.genre_id " +
+                    "WHERE fg.film_id IN (:filmIds) " +
+                    "ORDER BY fg.film_id, g.id";
+    private static final String FIND_GENRES_FOR_ONE_FILM_ID_QUERY =
+            "SELECT g.id, g.name, fg.film_id " +
+                    "FROM genres g " +
+                    "JOIN film_genres fg ON g.id = fg.genre_id " +
                     "WHERE fg.film_id = ? " +
-                    "ORDER BY g.id ASC;";
-    private final JdbcTemplate jdbc;
-    private final FilmGenresRepository filmGenresRepository;
+                    "ORDER BY g.id";
 
-    public FilmRepository(JdbcTemplate jdbc, RowMapper<Film> mapper, FilmGenresRepository filmGenresRepository) {
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
+    private final GenreRowMapper genreRowMapper;
+
+    public FilmRepository(
+            JdbcTemplate jdbc,
+            RowMapper<Film> mapper,
+            NamedParameterJdbcTemplate namedParameterJdbcTemplate,
+            JdbcTemplate jdbcTemplate,
+            GenreRowMapper genreRowMapper
+    ) {
         super(jdbc, mapper, Film.class);
-        this.jdbc = jdbc;
-        this.filmGenresRepository = filmGenresRepository;
+        this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
+        this.jdbcTemplate = jdbcTemplate;
+        this.genreRowMapper = genreRowMapper;
     }
 
     public List<Film> findAll() {
         List<Film> films = findMany(FIND_ALL_QUERY);
-        films.forEach(this::loadGenres);
-        return films;
+        return loadGenresToFilms(films);
     }
 
     public Film create(Film film) {
@@ -64,7 +80,6 @@ public class FilmRepository extends BaseRepository<Film> {
                 film.getMpa().getId()
         );
         film.setId(id);
-        filmGenresRepository.update(film);
 
         return findById(id).orElseThrow(() -> new InternalServerException("Ошибка при создании фильма"));
     }
@@ -79,16 +94,16 @@ public class FilmRepository extends BaseRepository<Film> {
                 film.getMpa().getId(),
                 film.getId()
         );
-        filmGenresRepository.update(film);
 
         return findById(film.getId())
                 .orElseThrow(() -> new NotFoundException("Фильм с id " + film.getId() + " не найден"));
     }
 
     public Optional<Film> findById(long filmId) {
-        Optional<Film> filmOpt = findOne(FIND_BY_ID_QUERY, filmId);
-        filmOpt.ifPresent(this::loadGenres);
-        return filmOpt;
+        Optional<Film> film = findOne(FIND_BY_ID_QUERY, filmId);
+        film.ifPresent(this::loadGenresToOneFilm);
+
+        return film;
     }
 
     public Film likeFilm(long id, long userId) {
@@ -103,18 +118,48 @@ public class FilmRepository extends BaseRepository<Film> {
 
     public List<Film> getPopular(int count) {
         List<Film> films = findMany(FIND_POPULAR_QUERY, count);
-        films.forEach(this::loadGenres);
+        return loadGenresToFilms(films);
+    }
+
+    public List<Film> loadGenresToFilms(List<Film> films) {
+        if (films.isEmpty()) return films;
+
+        Set<Long> filmIds = films.stream()
+                .map(Film::getId)
+                .collect(Collectors.toSet());
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource("filmIds", filmIds);
+
+        List<Map.Entry<Long, Genre>> genreEntries = namedParameterJdbcTemplate.query(
+                FIND_GENRES_BY_FILMS_ID_QUERY,
+                parameters,
+                (rs, rowNum) -> {
+                    Genre genre = new Genre();
+                    genre.setId(rs.getInt("id"));
+                    genre.setName(rs.getString("name"));
+                    Long filmId = rs.getLong("film_id");
+                    return new AbstractMap.SimpleImmutableEntry<>(filmId, genre);
+                }
+        );
+
+        Map<Long, Set<Genre>> genresByFilmId = genreEntries.stream()
+                .collect(Collectors.groupingBy(
+                        Map.Entry::getKey,
+                        Collectors.mapping(Map.Entry::getValue, Collectors.toCollection(LinkedHashSet::new))
+                ));
+
+        films.forEach(film -> film.setGenres(
+                genresByFilmId.getOrDefault(film.getId(), new LinkedHashSet<>())
+        ));
+
         return films;
     }
 
-    private void loadGenres(Film film) {
-        List<Genre> genresList = jdbc.query(FIND_GENRES_BY_FILM_ID_QUERY, (rs, rowNum) -> {
-            Genre genre = new Genre();
-            genre.setId(rs.getInt("id"));
-            genre.setName(rs.getString("name"));
-            return genre;
-        }, film.getId());
+    public void loadGenresToOneFilm(Film film) {
+        Set<Genre> genres = new LinkedHashSet<>(
+                jdbcTemplate.query(FIND_GENRES_FOR_ONE_FILM_ID_QUERY, genreRowMapper, film.getId())
+        );
+        film.setGenres(genres);
 
-        film.setGenres(new LinkedHashSet<>(genresList));
     }
 }
