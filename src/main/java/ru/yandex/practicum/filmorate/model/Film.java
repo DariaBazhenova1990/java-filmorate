@@ -1,15 +1,18 @@
 package ru.yandex.practicum.filmorate.model;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import ru.yandex.practicum.filmorate.validator.MinimumDate;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Data
+@Valid
 public class Film {
-    private Long id;
+    private long id;
 
     @NotBlank(message = "Название не может быть пустым")
     private String name;
@@ -25,5 +28,9 @@ public class Film {
     private int duration;
 
     private Set<Long> userLikes;
+
+    private Set<Genre> genres = new LinkedHashSet<>();
+
+    private Mpa mpa;
 
 }

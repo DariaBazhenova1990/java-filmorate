@@ -1,90 +1,122 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dal.FriendRepository;
+import ru.yandex.practicum.filmorate.dal.UserRepository;
+import ru.yandex.practicum.filmorate.dto.UserDto.NewUserRequest;
+import ru.yandex.practicum.filmorate.dto.UserDto.UpdateUserRequest;
+import ru.yandex.practicum.filmorate.dto.UserDto.UserDto;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
+import ru.yandex.practicum.filmorate.mapper.UserMapper;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class UserService {
-    private final UserStorage userStorage;
+    private final UserRepository userRepository;
+    private final FriendRepository friendRepository;
 
-    public Collection<User> getAll() {
+    public UserService(UserRepository userRepository, FriendRepository friendRepository) {
+        this.userRepository = userRepository;
+        this.friendRepository = friendRepository;
+    }
+
+    public Collection<UserDto> getAll() {
         log.info("Получение списка всех пользователей");
-        return userStorage.getAll();
+        return userRepository.findAll()
+                .stream()
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toList());
     }
 
-    public User create(User user) {
-        log.info("Получен запрос на создание пользователя с логином: {}", user.getLogin());
-        checkAndSetName(user);
-        User createdUser = userStorage.create(user);
-        log.info("Пользователь успешно создан. Присвоен ID: {}", createdUser.getId());
-        return createdUser;
+    public UserDto getUserById(long id) {
+        log.info("Получение пользователя по ID {}", id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Ошибка поиска: не найден пользователь с ID: {}", id);
+                    return new NotFoundException("Пользователь с id " + id + " не найден");
+                });
+        return UserMapper.mapToUserDto(user);
     }
 
-    public User update(User newUser) {
-        log.info("Получен запрос на обновление пользователя с ID: {}", newUser.getId());
-        if (newUser.getId() == null) {
-            log.warn("Ошибка обновления пользователя: не указан ID");
-            throw new ValidationException("Id должен быть указан");
-        }
-        if (userStorage.findById(newUser.getId()).isEmpty()) {
-            log.warn("Ошибка обновления пользователя: пользователь с ID {} не найден", newUser.getId());
-            throw new NotFoundException("Пользователь с id = " + newUser.getId() + " не найден");
-        }
+    public UserDto create(NewUserRequest newUser) {
+        log.info("Получен запрос на создание пользователя с логином: {}", newUser.getLogin());
         checkAndSetName(newUser);
-        User oldUser = userStorage.update(newUser);
-        log.info("Пользователь с ID: {} успешно обновлен", oldUser.getId());
-        return oldUser;
+
+        User user = UserMapper.mapToUser(newUser);
+        user = userRepository.create(user);
+        log.info("Пользователь успешно создан. Присвоен ID: {}", user.getId());
+        return UserMapper.mapToUserDto(user);
     }
 
-    private void checkAndSetName(User user) {
+    private void checkAndSetName(NewUserRequest user) {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
             log.info("У пользователя с логином {} не указано имя. В качестве имени установлен логин.", user.getLogin());
         }
     }
 
-    public User doFriends(Long id, Long friendId) {
+    public UserDto update(UpdateUserRequest updateRequest) {
+        long userId = updateRequest.getId();
+        log.info("Получен запрос на обновление пользователя с ID: {}", userId);
+        User user = userRepository.findById(userId)
+                .map(userToUpdate -> UserMapper.updateUserFields(userToUpdate, updateRequest))
+                .orElseThrow(() -> {
+                            log.warn("Ошибка обновления пользователя: пользователь с ID {} не найден", userId);
+                            return new NotFoundException("Пользователь с id = " + userId + " не найден");
+                        }
+                );
+        user = userRepository.update(user);
+        log.info("Пользователь успешно обновлен. Новые значения: {}", updateRequest);
+        return UserMapper.mapToUserDto(user);
+    }
+
+    public void doFriends(long id, long friendId) {
         log.info("Получен запрос на добавление в друзья. ID пользователя: {}. ID друга: {}", id, friendId);
         isValidUserPair(id, friendId);
-        return userStorage.doFriends(id, friendId);
+        friendRepository.doFriends(id, friendId);
+        log.info("Заявка в друзья отправлена. ID пользователя: {}. ID друга: {}", id, friendId);
     }
 
-    public User undoFriends(Long id, Long friendId) {
+    public void undoFriends(Long id, Long friendId) {
         log.info("Получен запрос на удаление из друзей. ID пользователя: {}. ID друга: {}", id, friendId);
         isValidUserPair(id, friendId);
-        return userStorage.undoFriends(id, friendId);
+        friendRepository.undoFriends(id, friendId);
+        log.info("Запрос на удаление из друзей исполнен. ID пользователя: {}. ID друга: {}", id, friendId);
     }
 
-    public Collection<User> getFriends(Long id) {
+    public Collection<UserDto> getFriends(Long id) {
         log.info("Получение списка друзей для пользователя с ID {}", id);
-        if (userStorage.findById(id).isEmpty()) {
+        if (userRepository.findById(id).isEmpty()) {
             log.warn("Ошибка поиска: не найден пользователь с ID: {}", id);
             throw new NotFoundException("Пользователь с id " + id + " не найден");
         }
-        return userStorage.getFriends(id);
+        return friendRepository.getFriends(id)
+                .stream()
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toList());
     }
 
-    public Collection<User> getCommonFriends(Long id, Long otherId) {
+    public Collection<UserDto> getCommonFriends(Long id, Long otherId) {
         log.info("Получение списка общих друзей для пользователей с ID {} и ID {}", id, otherId);
         isValidUserPair(id, otherId);
-        return userStorage.getCommonFriends(id, otherId);
+        return friendRepository.getCommonFriends(id, otherId)
+                .stream()
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toList());
     }
 
-    private void isValidUserPair(Long id, Long friendId) {
-        Optional<User> user = userStorage.findById(id);
-        Optional<User> friend = userStorage.findById(friendId);
+    private void isValidUserPair(long id, long friendId) {
+        Optional<User> user = userRepository.findById(id);
+        Optional<User> friend = userRepository.findById(friendId);
 
         if (user.isEmpty() || friend.isEmpty()) {
             List<Long> missingIds = new ArrayList<>();

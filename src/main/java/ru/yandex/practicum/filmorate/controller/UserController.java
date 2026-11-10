@@ -2,50 +2,59 @@ package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.dto.UserDto.NewUserRequest;
+import ru.yandex.practicum.filmorate.dto.UserDto.UpdateUserRequest;
+import ru.yandex.practicum.filmorate.dto.UserDto.UserDto;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.Collection;
 
 @RestController
 @RequestMapping("/users")
+@Validated
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public Collection<User> getAll() {
+    public Collection<UserDto> getAll() {
         return userService.getAll();
     }
 
+    @GetMapping("/{id}")
+    public UserDto getUserById(@PathVariable("id") long id) {
+        return userService.getUserById(id);
+    }
+
     @PostMapping
-    public User create(@Valid @RequestBody User user) {
-        return userService.create(user);
+    public UserDto create(@Valid @RequestBody NewUserRequest newUser) {
+        return userService.create(newUser);
     }
 
     @PutMapping
-    public User update(@Valid @RequestBody User newUser) {
-        return userService.update(newUser);
+    public UserDto update(@Valid @RequestBody UpdateUserRequest userUpdate) {
+        return userService.update(userUpdate);
     }
 
     @PutMapping("/{id}/friends/{friendId}")
-    public User doFriends(@PathVariable("id") Long id, @PathVariable("friendId") Long friendId) {
-        return userService.doFriends(id, friendId);
+    public void doFriends(@PathVariable("id") long id, @PathVariable("friendId") long friendId) {
+        userService.doFriends(id, friendId);
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
-    public User undoFriends(@PathVariable("id") Long id, @PathVariable("friendId") Long friendId) {
-        return userService.undoFriends(id, friendId);
+    public void undoFriends(@PathVariable("id") long id, @PathVariable("friendId") long friendId) {
+        userService.undoFriends(id, friendId);
     }
 
     @GetMapping("/{id}/friends")
-    public Collection<User> getFriends(@PathVariable("id") Long id) {
+    public Collection<UserDto> getFriends(@PathVariable("id") long id) {
         return userService.getFriends(id);
     }
 
     @GetMapping("/{id}/friends/common/{otherId}")
-    public Collection<User> getCommonFriends(@PathVariable("id") Long id, @PathVariable("otherId") Long otherId) {
+    public Collection<UserDto> getCommonFriends(@PathVariable("id") long id, @PathVariable("otherId") long otherId) {
         return userService.getCommonFriends(id, otherId);
     }
 
