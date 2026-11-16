@@ -74,6 +74,10 @@ public class FilmRepository extends BaseRepository<Film> {
                     "JOIN film_directors fd ON d.id = fd.director_id " +
                     "WHERE fd.film_id = ? " +
                     "ORDER BY d.id";
+    private static final String FIND_USER_LIKES_FOR_FILM_ID_QUERY =
+            "SELECT user_id FROM film_likes WHERE film_id = ?;";
+    private static final String FIND_USER_LIKES_BY_FILMS_ID_QUERY =
+            "SELECT film_id, user_id FROM film_likes WHERE film_id IN (:filmIds);";
 
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final JdbcTemplate jdbcTemplate;
@@ -95,7 +99,8 @@ public class FilmRepository extends BaseRepository<Film> {
     public List<Film> findAll() {
         List<Film> films = findMany(FIND_ALL_QUERY);
         loadGenresToFilms(films);
-        return loadDirectorsToFilms(films);
+        loadDirectorsToFilms(films);
+        return loadUserLikesToFilms(films);
     }
 
     public Film create(Film film) {
@@ -132,6 +137,7 @@ public class FilmRepository extends BaseRepository<Film> {
         film.ifPresent(f -> {
             loadGenresToOneFilm(f);
             loadDirectorsToOneFilm(f);
+            loadUserLikesToOneFilm(f);
         });
 
         return film;
@@ -150,7 +156,8 @@ public class FilmRepository extends BaseRepository<Film> {
     public List<Film> getPopular(int count) {
         List<Film> films = findMany(FIND_POPULAR_QUERY, count);
         loadGenresToFilms(films);
-        return loadDirectorsToFilms(films);
+        loadDirectorsToFilms(films);
+        return loadUserLikesToFilms(films);
     }
 
     public List<Film> getFilmsByDirector(long directorId, String sortBy) {
@@ -252,5 +259,43 @@ public class FilmRepository extends BaseRepository<Film> {
                 )
         );
         film.setDirectors(directors);
+    }
+
+    public void loadUserLikesToOneFilm(Film film) {
+        Set<Long> userLikes = new HashSet<>(
+                jdbcTemplate.queryForList(FIND_USER_LIKES_FOR_FILM_ID_QUERY, Long.class, film.getId())
+        );
+        film.setUserLikes(userLikes);
+    }
+
+    public List<Film> loadUserLikesToFilms(List<Film> films) {
+        if (films.isEmpty()) return films;
+
+        Set<Long> filmIds = films.stream()
+                .map(Film::getId)
+                .collect(Collectors.toSet());
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource("filmIds", filmIds);
+
+        List<Map.Entry<Long, Long>> likeEntries = namedParameterJdbcTemplate.query(
+                FIND_USER_LIKES_BY_FILMS_ID_QUERY,
+                parameters,
+                (rs, rowNum) -> new AbstractMap.SimpleImmutableEntry<>(
+                        rs.getLong("film_id"),
+                        rs.getLong("user_id")
+                )
+        );
+
+        Map<Long, Set<Long>> likesByFilmId = likeEntries.stream()
+                .collect(Collectors.groupingBy(
+                        Map.Entry::getKey,
+                        Collectors.mapping(Map.Entry::getValue, Collectors.toSet())
+                ));
+
+        films.forEach(film -> film.setUserLikes(
+                likesByFilmId.getOrDefault(film.getId(), new HashSet<>())
+        ));
+
+        return films;
     }
 }
