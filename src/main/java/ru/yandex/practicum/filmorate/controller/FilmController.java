@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.dto.FilmDto.FilmDto;
@@ -14,13 +15,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/films")
 @Validated
+@RequiredArgsConstructor
 public class FilmController {
 
     private final FilmService filmService;
-
-    public FilmController(FilmService filmService) {
-        this.filmService = filmService;
-    }
 
     @GetMapping
     public List<FilmDto> getAll() {
