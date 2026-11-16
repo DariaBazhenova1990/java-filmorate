@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.dal;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -16,29 +17,20 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class DirectorRepository {
 
     private final JdbcTemplate jdbcTemplate;
-
-    private static final RowMapper<Director> DIRECTOR_ROW_MAPPER = (rs, rowNum) -> {
-        Director director = new Director();
-        director.setId(rs.getLong("id"));
-        director.setName(rs.getString("name"));
-        return director;
-    };
-
-    public DirectorRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
+    private final RowMapper<Director> directorRowMapper;
 
     public List<Director> findAll() {
         String sql = "SELECT id, name FROM directors ORDER BY id";
-        return jdbcTemplate.query(sql, DIRECTOR_ROW_MAPPER);
+        return jdbcTemplate.query(sql, directorRowMapper);
     }
 
     public Optional<Director> findById(long id) {
         String sql = "SELECT id, name FROM directors WHERE id = ?";
-        List<Director> directors = jdbcTemplate.query(sql, DIRECTOR_ROW_MAPPER, id);
+        List<Director> directors = jdbcTemplate.query(sql, directorRowMapper, id);
         return directors.stream().findFirst();
     }
 
@@ -50,7 +42,7 @@ public class DirectorRepository {
         String sql = "SELECT id, name FROM directors WHERE id IN (" +
                 String.join(",", Collections.nCopies(ids.size(), "?")) + ")";
 
-        return jdbcTemplate.query(sql, DIRECTOR_ROW_MAPPER, ids.toArray());
+        return jdbcTemplate.query(sql, directorRowMapper, ids.toArray());
     }
 
     public Director create(Director director) {
