@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.dto.FilmDto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -39,7 +38,6 @@ public class UpdateFilmRequest {
     @Valid
     private MpaDto mpa;
 
-    @JsonProperty("director")
     private Set<DirectorDto> directors;
 
     public boolean hasName() {
