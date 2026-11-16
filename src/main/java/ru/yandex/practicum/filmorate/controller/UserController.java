@@ -4,12 +4,17 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.dto.FilmDto.FilmDto;
 import ru.yandex.practicum.filmorate.dto.UserDto.NewUserRequest;
 import ru.yandex.practicum.filmorate.dto.UserDto.UpdateUserRequest;
 import ru.yandex.practicum.filmorate.dto.UserDto.UserDto;
+import ru.yandex.practicum.filmorate.mapper.FilmMapper;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/users")
@@ -56,6 +61,11 @@ public class UserController {
     @GetMapping("/{id}/friends/common/{otherId}")
     public Collection<UserDto> getCommonFriends(@PathVariable("id") long id, @PathVariable("otherId") long otherId) {
         return userService.getCommonFriends(id, otherId);
+    }
+
+    @GetMapping("/{id}/recommendations")
+    public List<FilmDto> getRecommendations(@PathVariable("id") long id) {
+        return userService.getRecommendations(id);
     }
 
 }
