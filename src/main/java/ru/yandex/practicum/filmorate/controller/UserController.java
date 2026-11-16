@@ -8,13 +8,11 @@ import ru.yandex.practicum.filmorate.dto.FilmDto.FilmDto;
 import ru.yandex.practicum.filmorate.dto.UserDto.NewUserRequest;
 import ru.yandex.practicum.filmorate.dto.UserDto.UpdateUserRequest;
 import ru.yandex.practicum.filmorate.dto.UserDto.UserDto;
-import ru.yandex.practicum.filmorate.mapper.FilmMapper;
-import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/users")
@@ -22,6 +20,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final FilmService filmService;
 
     @GetMapping
     public Collection<UserDto> getAll() {
@@ -64,8 +63,8 @@ public class UserController {
     }
 
     @GetMapping("/{id}/recommendations")
-    public List<FilmDto> getRecommendations(@PathVariable("id") long id) {
-        return userService.getRecommendations(id);
+    public List<FilmDto> getRecommendations(@PathVariable("id") long userId) {
+        return filmService.getRecommendations(userId);
     }
 
 }

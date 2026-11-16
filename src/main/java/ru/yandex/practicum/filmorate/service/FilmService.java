@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dal.*;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FilmService {
 
     private final FilmRepository filmRepository;
@@ -32,24 +34,6 @@ public class FilmService {
     private final FilmGenresRepository filmGenresRepository;
     private final DirectorRepository directorRepository;
     private final FilmDirectorsRepository filmDirectorsRepository;
-
-    public FilmService(
-            FilmRepository filmRepository,
-            UserRepository userRepository,
-            MpaRepository mpaRepository,
-            GenreRepository genreRepository,
-            FilmGenresRepository filmGenresRepository,
-            DirectorRepository directorRepository,
-            FilmDirectorsRepository filmDirectorsRepository
-    ) {
-        this.filmRepository = filmRepository;
-        this.userRepository = userRepository;
-        this.mpaRepository = mpaRepository;
-        this.genreRepository = genreRepository;
-        this.filmGenresRepository = filmGenresRepository;
-        this.directorRepository = directorRepository;
-        this.filmDirectorsRepository = filmDirectorsRepository;
-    }
 
     public List<FilmDto> getAll() {
         log.info("Получение списка всех фильмов");
@@ -229,6 +213,19 @@ public class FilmService {
         }
 
         return filmRepository.getFilmsByDirector(directorId, sortBy)
+                .stream()
+                .map(FilmMapper::mapToFilmDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<FilmDto> getRecommendations(long userId) {
+        log.info("Получение рекомендаций по фильмам для пользователя с ID {}", userId);
+        if (userRepository.findById(userId).isEmpty()) {
+            log.warn("Ошибка поиска: не найден пользователь с ID: {}", userId);
+            throw new NotFoundException("Пользователь с id " + userId + " не найден");
+        }
+        //TODO ЗАМЕНИТЬ!!!
+        return filmRepository.getPopular(10)
                 .stream()
                 .map(FilmMapper::mapToFilmDto)
                 .collect(Collectors.toList());

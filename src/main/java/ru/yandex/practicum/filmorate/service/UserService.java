@@ -1,19 +1,16 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.dal.FilmRepository;
 import ru.yandex.practicum.filmorate.dal.FriendRepository;
 import ru.yandex.practicum.filmorate.dal.UserRepository;
-import ru.yandex.practicum.filmorate.dto.FilmDto.FilmDto;
 import ru.yandex.practicum.filmorate.dto.UserDto.NewUserRequest;
 import ru.yandex.practicum.filmorate.dto.UserDto.UpdateUserRequest;
 import ru.yandex.practicum.filmorate.dto.UserDto.UserDto;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
-import ru.yandex.practicum.filmorate.mapper.FilmMapper;
 import ru.yandex.practicum.filmorate.mapper.UserMapper;
-import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.ArrayList;
@@ -24,16 +21,10 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final FriendRepository friendRepository;
-    private final FilmRepository filmRepository;
-
-    public UserService(UserRepository userRepository, FriendRepository friendRepository, FilmRepository filmRepository) {
-        this.userRepository = userRepository;
-        this.friendRepository = friendRepository;
-        this.filmRepository = filmRepository;
-    }
 
     public Collection<UserDto> getAll() {
         log.info("Получение списка всех пользователей");
@@ -138,16 +129,4 @@ public class UserService {
         }
     }
 
-    public List<FilmDto> getRecommendations(long id) {
-        log.info("Получение рекомендаций по фильмам для пользователя с ID {}", id);
-        if (userRepository.findById(id).isEmpty()) {
-            log.warn("Ошибка поиска: не найден пользователь с ID: {}", id);
-            throw new NotFoundException("Пользователь с id " + id + " не найден");
-        }
-        //TODO ЗАМЕНИТЬ!!!
-        return filmRepository.getPopular(10)
-                .stream()
-                .map(FilmMapper::mapToFilmDto)
-                .collect(Collectors.toList());
-    }
 }
