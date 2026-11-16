@@ -17,9 +17,7 @@ import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -224,10 +222,74 @@ public class FilmService {
             log.warn("Ошибка поиска: не найден пользователь с ID: {}", userId);
             throw new NotFoundException("Пользователь с id " + userId + " не найден");
         }
-        //TODO ЗАМЕНИТЬ!!!
-        return filmRepository.getPopular(10)
+
+        // Получаем карту всех лайков: Map<UserId, Set<FilmId>>
+        Map<Long, Set<Long>> userLikes = filmRepository.getAllUserLikes();
+
+        // Возвращаем пустой список для пользователя без лайков
+        Set<Long> targetUserLikes = userLikes.get(userId);
+        if (targetUserLikes == null || targetUserLikes.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Строим матрицу частот совместных лайков: Map<FilmId1, Map<FilmId2, Frequency>>
+        Map<Long, Map<Long, Integer>> freqMatrix = new HashMap<>();
+
+        for (Map.Entry<Long, Set<Long>> entry : userLikes.entrySet()) {
+            if (entry.getKey().equals(userId)) {
+                continue;
+            }
+
+            Set<Long> likedFilms = entry.getValue();
+            if (likedFilms == null || likedFilms.isEmpty()) {
+                continue;
+            }
+
+            for (Long film1 : likedFilms) {
+                Map<Long, Integer> row = freqMatrix.computeIfAbsent(film1, k -> new HashMap<>());
+                for (Long film2 : likedFilms) {
+                    if (!film1.equals(film2)) {
+                        row.merge(film2, 1, Integer::sum);
+                    }
+                }
+            }
+        }
+
+        // Считаем вес не лайкнутых фильмов
+        Map<Long, Integer> filmScores = new HashMap<>();
+
+        for (Long likedFilm : targetUserLikes) {
+            Map<Long, Integer> relatedFilms = freqMatrix.get(likedFilm);
+            if (relatedFilms == null) {
+                continue;
+            }
+
+            for (Map.Entry<Long, Integer> entry : relatedFilms.entrySet()) {
+                Long candidateFilmId = entry.getKey();
+                Integer frequency = entry.getValue();
+
+                if (!targetUserLikes.contains(candidateFilmId)) {
+                    filmScores.merge(candidateFilmId, frequency, Integer::sum);
+                }
+            }
+        }
+
+        if (filmScores.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Сортируем ID фильмов по убыванию веса и по ID при равном весе
+        List<Long> recommendedFilmIds = filmScores.entrySet().stream()
+                .sorted(Map.Entry.<Long, Integer>comparingByValue().reversed()
+                        .thenComparing(Map.Entry.comparingByKey()))
+                .map(Map.Entry::getKey)
+                .toList();
+
+        return filmRepository.getFilmsByIds(recommendedFilmIds)
                 .stream()
                 .map(FilmMapper::mapToFilmDto)
-                .collect(Collectors.toList());
+                .toList();
+
     }
+
 }
