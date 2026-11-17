@@ -197,9 +197,9 @@ public class FilmService {
         return FilmMapper.mapToFilmDto(unlikedFilm);
     }
 
-    public List<FilmDto> getPopular(int count) {
-        log.info("Получение списка популярных фильмов");
-        return filmRepository.getPopular(count)
+    public List<FilmDto> getPopular(int count, Integer genreId, Integer year) {
+        log.info("Получение списка популярных фильмов: count={}, genreId={}, year={}", count, genreId, year);
+        return filmRepository.getPopular(count, genreId, year)
                 .stream()
                 .map(FilmMapper::mapToFilmDto)
                 .collect(Collectors.toList());

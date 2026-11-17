@@ -21,13 +21,6 @@ public class FilmRepository extends BaseRepository<Film> {
             "SELECT f.*, m.name AS mpa_name FROM films f JOIN mpa m ON f.mpa_id = m.id;";
     private static final String FIND_BY_ID_QUERY =
             "SELECT f.*, m.name AS mpa_name FROM films f JOIN mpa m ON f.mpa_id = m.id WHERE f.id = ?;";
-    private static final String FIND_POPULAR_QUERY =
-            "SELECT f.*, m.name AS mpa_name FROM films f " +
-                    "JOIN mpa m ON f.mpa_id = m.id " +
-                    "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
-                    "GROUP BY f.id, m.name " +
-                    "ORDER BY COUNT(fl.user_id) DESC " +
-                    "LIMIT ?";
     private static final String FIND_BY_DIRECTOR_SORT_BY_YEAR_QUERY =
             "SELECT f.*, m.name AS mpa_name FROM films f " +
                     "JOIN mpa m ON f.mpa_id = m.id " +
@@ -147,8 +140,37 @@ public class FilmRepository extends BaseRepository<Film> {
         return findById(id).orElseThrow(() -> new NotFoundException("Фильм с id " + id + " не найден"));
     }
 
-    public List<Film> getPopular(int count) {
-        List<Film> films = findMany(FIND_POPULAR_QUERY, count);
+    public List<Film> getPopular(int count, Integer genreId, Integer year) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT f.*, m.name AS mpa_name FROM films f " +
+                        "JOIN mpa m ON f.mpa_id = m.id " +
+                        "LEFT JOIN film_likes fl ON f.id = fl.film_id "
+        );
+
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (genreId != null) {
+            sql.append("JOIN film_genres fg ON f.id = fg.film_id ");
+            conditions.add("fg.genre_id = ?");
+            params.add(genreId);
+        }
+
+        if (year != null) {
+            conditions.add("EXTRACT(YEAR FROM f.release_date) = ?");
+            params.add(year);
+        }
+
+        if (!conditions.isEmpty()) {
+            sql.append("WHERE ").append(String.join(" AND ", conditions)).append(" ");
+        }
+
+        sql.append("GROUP BY f.id, m.name ")
+                .append("ORDER BY COUNT(DISTINCT fl.user_id) DESC ")
+                .append("LIMIT ?");
+        params.add(count);
+
+        List<Film> films = findMany(sql.toString(), params.toArray());
         loadGenresToFilms(films);
         return loadDirectorsToFilms(films);
     }
