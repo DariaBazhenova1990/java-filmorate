@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import ru.yandex.practicum.filmorate.dto.DirectorDto;
 import ru.yandex.practicum.filmorate.dto.GenreDto;
 import ru.yandex.practicum.filmorate.dto.MpaDto;
 import ru.yandex.practicum.filmorate.validator.MinimumDate;
@@ -31,6 +32,8 @@ public class NewFilmRequest {
     private int duration;
 
     private Set<GenreDto> genres = new LinkedHashSet<>();
+
+    private Set<DirectorDto> directors = new LinkedHashSet<>();
 
     private MpaDto mpa;
 }

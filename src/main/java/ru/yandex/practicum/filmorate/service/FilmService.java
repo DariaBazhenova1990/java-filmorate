@@ -3,13 +3,16 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dal.*;
+import ru.yandex.practicum.filmorate.dto.DirectorDto;
 import ru.yandex.practicum.filmorate.dto.FilmDto.FilmDto;
-import ru.yandex.practicum.filmorate.dto.GenreDto;
 import ru.yandex.practicum.filmorate.dto.FilmDto.NewFilmRequest;
 import ru.yandex.practicum.filmorate.dto.FilmDto.UpdateFilmRequest;
+import ru.yandex.practicum.filmorate.dto.GenreDto;
 import ru.yandex.practicum.filmorate.dto.MpaDto;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
+import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.mapper.FilmMapper;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 
@@ -21,24 +24,31 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class FilmService {
+
     private final FilmRepository filmRepository;
     private final UserRepository userRepository;
     private final MpaRepository mpaRepository;
     private final GenreRepository genreRepository;
     private final FilmGenresRepository filmGenresRepository;
+    private final DirectorRepository directorRepository;
+    private final FilmDirectorsRepository filmDirectorsRepository;
 
     public FilmService(
             FilmRepository filmRepository,
             UserRepository userRepository,
             MpaRepository mpaRepository,
             GenreRepository genreRepository,
-            FilmGenresRepository filmGenresRepository
+            FilmGenresRepository filmGenresRepository,
+            DirectorRepository directorRepository,
+            FilmDirectorsRepository filmDirectorsRepository
     ) {
         this.filmRepository = filmRepository;
         this.userRepository = userRepository;
         this.mpaRepository = mpaRepository;
         this.genreRepository = genreRepository;
         this.filmGenresRepository = filmGenresRepository;
+        this.directorRepository = directorRepository;
+        this.filmDirectorsRepository = filmDirectorsRepository;
     }
 
     public List<FilmDto> getAll() {
@@ -51,12 +61,17 @@ public class FilmService {
 
     public FilmDto create(NewFilmRequest newFilm) {
         log.info("Получен запрос на добавление нового фильма: {}", newFilm.getName());
+
         checkMpa(newFilm.getMpa());
+
         List<Genre> genres = checkAndGetGenres(newFilm.getGenres());
+        List<Director> directors = checkAndGetDirectors(newFilm.getDirectors());
+
         Film film = FilmMapper.mapToFilm(newFilm);
 
         film = filmRepository.create(film);
         film = filmGenresRepository.update(film, genres);
+        film = filmDirectorsRepository.update(film, directors);
 
         log.info("Фильм успешно добавлен. Присвоен ID: {}", film.getId());
 
@@ -76,7 +91,10 @@ public class FilmService {
         }
 
         List<Integer> genreIds = new ArrayList<>();
-        for (GenreDto genre : genres) genreIds.add(genre.getId());
+
+        for (GenreDto genre : genres) {
+            genreIds.add(genre.getId());
+        }
 
         List<Genre> existedGenres = genreRepository.getManyGenresByIds(genreIds);
 
@@ -84,55 +102,98 @@ public class FilmService {
             log.warn("Некоторые жанры не найдены");
             throw new NotFoundException("Некоторые жанры не найдены");
         }
-        return existedGenres;
 
+        return existedGenres;
+    }
+
+    private List<Director> checkAndGetDirectors(Set<DirectorDto> directors) {
+        if (directors == null || directors.isEmpty()) {
+            return null;
+        }
+
+        List<Long> directorIds = directors.stream()
+                .map(DirectorDto::getId)
+                .toList();
+
+        List<Director> existingDirectors = directorRepository.findAllByIds(directorIds);
+
+        if (existingDirectors.size() != directorIds.size()) {
+            log.warn("Некоторые режиссёры не найдены");
+            throw new NotFoundException("Некоторые режиссёры не найдены");
+        }
+
+        return existingDirectors;
     }
 
     public FilmDto update(UpdateFilmRequest updateRequest) {
         long filmId = updateRequest.getId();
         log.info("Получен запрос на обновление фильма с ID: {}", filmId);
+
         Film film = filmRepository.findById(filmId)
-                .map(filmToUpdate -> FilmMapper.updateFilmFields(filmToUpdate, updateRequest))
                 .orElseThrow(() -> {
-                            log.warn("Ошибка обновления фильма: фильм с ID {} не найден", filmId);
-                            return new NotFoundException("Фильм с id = " + filmId + " не найден");
-                        }
-                );
-        List<Genre> genres = checkAndGetGenres(updateRequest.getGenres());
+                    log.warn("Ошибка обновления фильма: фильм с ID {} не найден", filmId);
+                    return new NotFoundException("Фильм с id = " + filmId + " не найден");
+                });
+
+        List<Genre> genres = null;
+        if (updateRequest.hasGenres()) {
+            genres = checkAndGetGenres(updateRequest.getGenres());
+        }
+
+        List<Director> directors = null;
+        if (updateRequest.hasDirectors()) {
+            directors = checkAndGetDirectors(updateRequest.getDirectors());
+        }
+
+        film = FilmMapper.updateFilmFields(film, updateRequest);
         film = filmRepository.update(film);
-        film = filmGenresRepository.update(film, genres);
+
+        if (updateRequest.hasGenres()) {
+            film = filmGenresRepository.update(film, genres);
+        }
+
+        film = filmDirectorsRepository.update(film, directors);
+
         log.info("Фильм с ID: {} успешно обновлен", film.getId());
+
         return FilmMapper.mapToFilmDto(film);
     }
 
     public FilmDto likeFilm(long id, long userId) {
         log.info("Получен запрос на добавление лайка для фильма с ID: {}", id);
+
         if (filmRepository.findById(id).isEmpty()) {
             log.warn("Ошибка добавления лайка фильма: фильм с ID {} не найден", id);
             throw new NotFoundException("Фильм с id = " + id + " не найден");
         }
+
         if (userRepository.findById(userId).isEmpty()) {
-            log.warn("Ошибка добавления лайка фильма: пользователь с ID {} не найден", id);
-            throw new NotFoundException("Пользователь с id = " + id + " не найден");
+            log.warn("Ошибка добавления лайка фильма: пользователь с ID {} не найден", userId);
+            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
 
         Film likedFilm = filmRepository.likeFilm(id, userId);
         log.info("Пользователь с ID: {} успешно лайкнул фильм с ID {}", userId, id);
+
         return FilmMapper.mapToFilmDto(likedFilm);
     }
 
     public FilmDto unlikeFilm(Long id, Long userId) {
         log.info("Получен запрос на удаление лайка для фильма с ID: {}", id);
+
         if (filmRepository.findById(id).isEmpty()) {
             log.warn("Ошибка удаления лайка фильма: фильм с ID {} не найден", id);
             throw new NotFoundException("Фильм с id = " + id + " не найден");
         }
+
         if (userRepository.findById(userId).isEmpty()) {
             log.warn("Ошибка удаления лайка фильма: пользователь с ID {} не найден", userId);
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
+
         Film unlikedFilm = filmRepository.unlikeFilm(id, userId);
         log.info("Пользователь с ID: {} успешно отменил лайк фильма с ID {}", userId, id);
+
         return FilmMapper.mapToFilmDto(unlikedFilm);
     }
 
@@ -144,13 +205,32 @@ public class FilmService {
                 .collect(Collectors.toList());
     }
 
-
     public FilmDto getFilmById(int id) {
         Film film = filmRepository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("Ошибка поиска: Фильм с ID {} не найден", id);
                     return new NotFoundException("Фильм с id = " + id + " не найден");
                 });
+
         return FilmMapper.mapToFilmDto(film);
+    }
+
+    public List<FilmDto> getFilmsByDirector(long directorId, String sortBy) {
+        log.info("Получение списка фильмов режиссёра с ID: {}, сортировка: {}", directorId, sortBy);
+
+        if (directorRepository.findById(directorId).isEmpty()) {
+            log.warn("Ошибка поиска: режиссёр с ID {} не найден", directorId);
+            throw new NotFoundException("Режиссёр с id = " + directorId + " не найден");
+        }
+
+        if (!"year".equals(sortBy) && !"likes".equals(sortBy)) {
+            log.warn("Некорректный параметр сортировки: {}", sortBy);
+            throw new ValidationException("Некорректный параметр сортировки sortBy: " + sortBy);
+        }
+
+        return filmRepository.getFilmsByDirector(directorId, sortBy)
+                .stream()
+                .map(FilmMapper::mapToFilmDto)
+                .collect(Collectors.toList());
     }
 }

@@ -17,6 +17,7 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor
 public class FilmController {
+
     private final FilmService filmService;
 
     @GetMapping
@@ -40,18 +41,33 @@ public class FilmController {
     }
 
     @PutMapping("/{id}/like/{userId}")
-    public FilmDto likeFilm(@PathVariable("id") long id, @Valid @PathVariable("userId") long userId) {
+    public FilmDto likeFilm(
+            @PathVariable("id") long id,
+            @Valid @PathVariable("userId") long userId
+    ) {
         return filmService.likeFilm(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
-    public FilmDto unlikeFilm(@PathVariable("id") long id, @PathVariable("userId") long userId) {
+    public FilmDto unlikeFilm(
+            @PathVariable("id") long id,
+            @PathVariable("userId") long userId
+    ) {
         return filmService.unlikeFilm(id, userId);
     }
 
     @GetMapping("/popular")
-    public List<FilmDto> getPopular(@RequestParam(defaultValue = "10") @Positive int count) {
+    public List<FilmDto> getPopular(
+            @RequestParam(defaultValue = "10") @Positive int count
+    ) {
         return filmService.getPopular(count);
     }
 
+    @GetMapping("/director/{directorId}")
+    public List<FilmDto> getFilmsByDirector(
+            @PathVariable("directorId") long directorId,
+            @RequestParam(name = "sortBy", defaultValue = "year") String sortBy
+    ) {
+        return filmService.getFilmsByDirector(directorId, sortBy);
+    }
 }

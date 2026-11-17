@@ -6,7 +6,7 @@ import ru.yandex.practicum.filmorate.dto.GenreDto;
 import ru.yandex.practicum.filmorate.model.Genre;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class GengeMapper {
+public class GenreMapper {
 
     public static Genre mapToGenre(GenreDto genreDto) {
         Genre genre = new Genre();

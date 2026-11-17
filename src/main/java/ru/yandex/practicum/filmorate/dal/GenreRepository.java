@@ -14,7 +14,7 @@ import java.util.Optional;
 @Repository
 public class GenreRepository extends BaseRepository<Genre> {
     private static final String FIND_ALL_QUERY =
-            "SELECT * FROM genres;";
+            "SELECT * FROM genres ORDER BY id;";
     private static final String FIND_GENRE_BY_ID_QUERY =
             "SELECT * FROM genres WHERE id = ?;";
     private static final String FIND_ALL_BY_IDS_QUERY =
@@ -43,5 +43,4 @@ public class GenreRepository extends BaseRepository<Genre> {
         MapSqlParameterSource parameters = new MapSqlParameterSource("genreIds", genreIds);
         return namedParameterJdbcTemplate.query(FIND_ALL_BY_IDS_QUERY, parameters, mapper);
     }
-
 }
