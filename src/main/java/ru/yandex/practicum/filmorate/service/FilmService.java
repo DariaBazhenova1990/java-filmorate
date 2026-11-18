@@ -278,15 +278,10 @@ public class FilmService {
             return Collections.emptyList();
         }
 
-        // Сортируем ID фильмов по убыванию веса и по ID при равном весе
-        List<Long> recommendedFilmIds = filmScores.entrySet().stream()
-                .sorted(Map.Entry.<Long, Integer>comparingByValue().reversed()
-                        .thenComparing(Map.Entry.comparingByKey()))
-                .map(Map.Entry::getKey)
-                .toList();
-
-        return filmRepository.getFilmsByIds(recommendedFilmIds)
+        return filmRepository.getFilmsByIds(new ArrayList<>(filmScores.keySet()))
                 .stream()
+                .sorted(Comparator.comparingInt((Film f) -> filmScores.get(f.getId())).reversed()
+                        .thenComparingLong(Film::getId))
                 .map(FilmMapper::mapToFilmDto)
                 .toList();
 
