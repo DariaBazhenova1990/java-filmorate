@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dal.FriendRepository;
@@ -20,14 +21,10 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final FriendRepository friendRepository;
-
-    public UserService(UserRepository userRepository, FriendRepository friendRepository) {
-        this.userRepository = userRepository;
-        this.friendRepository = friendRepository;
-    }
 
     public Collection<UserDto> getAll() {
         log.info("Получение списка всех пользователей");
@@ -131,4 +128,5 @@ public class UserService {
             throw new ValidationException("Пользователи не уникальны. Переданные ID: " + id + ", " + friendId);
         }
     }
+
 }
