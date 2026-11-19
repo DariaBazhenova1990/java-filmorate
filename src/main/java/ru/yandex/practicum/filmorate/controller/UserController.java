@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -67,4 +68,8 @@ public class UserController {
         return filmService.getRecommendations(userId);
     }
 
+    @DeleteMapping("/{userId}")
+    public void delete(@PathVariable long userId) {
+        userService.delete(userId);
+    }
 }

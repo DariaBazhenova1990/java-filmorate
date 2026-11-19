@@ -21,6 +21,10 @@ public class UserRepository extends BaseRepository<User> {
             "UPDATE users " +
                     "SET email = ?, login = ?, name = ?, birthday = ? " +
                     "WHERE id = ?;";
+    private static final String DELETE_QUERY = """
+            DELETE FROM users
+            WHERE id = ?
+            """;
 
     public UserRepository(JdbcTemplate jdbc, RowMapper<User> mapper) {
         super(jdbc, mapper, User.class);
@@ -58,4 +62,8 @@ public class UserRepository extends BaseRepository<User> {
         return findOne(FIND_BY_ID_QUERY, userId);
     }
 
+    public boolean delete(long id) {
+        int rowsAffected = jdbc.update(DELETE_QUERY, id);
+        return rowsAffected > 0;
+    }
 }

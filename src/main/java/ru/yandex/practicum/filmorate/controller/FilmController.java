@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.controller;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.dto.FilmDto.FilmDto;
@@ -69,5 +70,10 @@ public class FilmController {
             @RequestParam(name = "sortBy", defaultValue = "year") String sortBy
     ) {
         return filmService.getFilmsByDirector(directorId, sortBy);
+    }
+
+    @DeleteMapping("/{filmId}")
+    public void delete(@PathVariable long filmId) {
+        filmService.delete(filmId);
     }
 }

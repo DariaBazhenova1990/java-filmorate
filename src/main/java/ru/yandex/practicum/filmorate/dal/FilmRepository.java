@@ -82,6 +82,10 @@ public class FilmRepository extends BaseRepository<Film> {
             "SELECT user_id FROM film_likes WHERE film_id = ?;";
     private static final String FIND_USER_LIKES_BY_FILMS_ID_QUERY =
             "SELECT film_id, user_id FROM film_likes WHERE film_id IN (:filmIds);";
+    private static final String DELETE_QUERY = """
+            DELETE FROM films
+            WHERE id = ?
+            """;
 
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final JdbcTemplate jdbcTemplate;
@@ -329,4 +333,8 @@ public class FilmRepository extends BaseRepository<Film> {
         return loadUserLikesToFilms(films);
     }
 
+    public boolean delete(long id) {
+        int rowsAffected = jdbcTemplate.update(DELETE_QUERY, id);
+        return rowsAffected > 0;
+    }
 }
