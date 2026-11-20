@@ -159,7 +159,6 @@ public class FilmService {
         feedService.addEvent(userId, EventType.LIKE, Operation.ADD, id);
         log.info("Добавлено в ленту: пользователь с ID {} лайкнул фильм с ID {}", userId, id);
 
-
         return FilmMapper.mapToFilmDto(likedFilm);
     }
 
