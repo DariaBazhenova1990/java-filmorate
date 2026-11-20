@@ -4,10 +4,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.dto.EventDto;
 import ru.yandex.practicum.filmorate.dto.FilmDto.FilmDto;
 import ru.yandex.practicum.filmorate.dto.UserDto.NewUserRequest;
 import ru.yandex.practicum.filmorate.dto.UserDto.UpdateUserRequest;
 import ru.yandex.practicum.filmorate.dto.UserDto.UserDto;
+import ru.yandex.practicum.filmorate.service.FeedService;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.service.UserService;
 
@@ -21,6 +23,7 @@ import java.util.List;
 public class UserController {
     private final UserService userService;
     private final FilmService filmService;
+    private final FeedService feedService;
 
     @GetMapping
     public Collection<UserDto> getAll() {
@@ -70,5 +73,10 @@ public class UserController {
     @DeleteMapping("/{userId}")
     public void delete(@PathVariable long userId) {
         userService.delete(userId);
+    }
+
+    @GetMapping("/{id}/feed")
+    public List<EventDto> getFeed(@PathVariable long id) {
+        return feedService.getFeed(id);
     }
 }
