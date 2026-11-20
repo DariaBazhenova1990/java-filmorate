@@ -13,9 +13,7 @@ import ru.yandex.practicum.filmorate.dto.MpaDto;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.mapper.FilmMapper;
-import ru.yandex.practicum.filmorate.model.Director;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,6 +30,7 @@ public class FilmService {
     private final FilmGenresRepository filmGenresRepository;
     private final DirectorRepository directorRepository;
     private final FilmDirectorsRepository filmDirectorsRepository;
+    private final FeedService feedService;
 
     public List<FilmDto> getAll() {
         log.info("Получение списка всех фильмов");
@@ -157,6 +156,10 @@ public class FilmService {
         Film likedFilm = filmRepository.likeFilm(id, userId);
         log.info("Пользователь с ID: {} успешно лайкнул фильм с ID {}", userId, id);
 
+        feedService.addEvent(userId, EventType.LIKE, Operation.ADD, id);
+        log.info("Добавлено в ленту: пользователь с ID {} лайкнул фильм с ID {}", userId, id);
+
+
         return FilmMapper.mapToFilmDto(likedFilm);
     }
 
@@ -175,6 +178,9 @@ public class FilmService {
 
         Film unlikedFilm = filmRepository.unlikeFilm(id, userId);
         log.info("Пользователь с ID: {} успешно отменил лайк фильма с ID {}", userId, id);
+
+        feedService.addEvent(userId, EventType.LIKE, Operation.REMOVE, id);
+        log.info("Добавлено в ленту: пользователь с ID {} отменил лайк фильм с ID {}", userId, id);
 
         return FilmMapper.mapToFilmDto(unlikedFilm);
     }
