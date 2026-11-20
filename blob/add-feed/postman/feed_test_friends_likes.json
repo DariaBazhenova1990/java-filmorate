@@ -1,0 +1,235 @@
+{
+  "info": {
+    "name": "Filmorate - Feed Tests (Friends & Likes)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "user1Id", "value": "" },
+    { "key": "user2Id", "value": "" },
+    { "key": "filmId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Create User 1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('user1Id', json.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"feed_user1@mail.ru\",\n  \"login\": \"feed_user1\",\n  \"name\": \"User One\",\n  \"birthday\": \"1995-05-15\"\n}"
+        },
+        "url": "{{baseUrl}}/users"
+      }
+    },
+    {
+      "name": "2. Create User 2",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('user2Id', json.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"feed_user2@mail.ru\",\n  \"login\": \"feed_user2\",\n  \"name\": \"User Two\",\n  \"birthday\": \"1996-06-20\"\n}"
+        },
+        "url": "{{baseUrl}}/users"
+      }
+    },
+    {
+      "name": "3. Create Film",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('filmId', json.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Inception\",\n  \"description\": \"Sci-fi thriller\",\n  \"releaseDate\": \"2010-07-16\",\n  \"duration\": 148,\n  \"mpa\": { \"id\": 3 }\n}"
+        },
+        "url": "{{baseUrl}}/films"
+      }
+    },
+    {
+      "name": "4. Add Friend (User 1 -> User 2)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Friend added (200)', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/users/{{user1Id}}/friends/{{user2Id}}"
+      }
+    },
+    {
+      "name": "5. Like Film (User 1)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Like added (200)', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/films/{{filmId}}/like/{{user1Id}}"
+      }
+    },
+    {
+      "name": "6. Remove Like (User 1)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Like removed (200)', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/films/{{filmId}}/like/{{user1Id}}"
+      }
+    },
+    {
+      "name": "7. Remove Friend (User 1 -> User 2)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Friend removed (200)', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/users/{{user1Id}}/friends/{{user2Id}}"
+      }
+    },
+    {
+      "name": "8. Get Feed for User 1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "const feed = pm.response.json();",
+              "const user1Id = Number(pm.collectionVariables.get('user1Id'));",
+              "const user2Id = Number(pm.collectionVariables.get('user2Id'));",
+              "const filmId = Number(pm.collectionVariables.get('filmId'));",
+              "",
+              "pm.test('Feed contains 4 events', () => {",
+              "    pm.expect(feed).to.be.an('array').with.lengthOf(4);",
+              "});",
+              "",
+              "pm.test('Event 1: FRIEND ADD', () => {",
+              "    pm.expect(feed[0].userId).to.eql(user1Id);",
+              "    pm.expect(feed[0].eventType).to.eql('FRIEND');",
+              "    pm.expect(feed[0].operation).to.eql('ADD');",
+              "    pm.expect(feed[0].entityId).to.eql(user2Id);",
+              "    pm.expect(feed[0].timestamp).to.be.a('number');",
+              "    pm.expect(feed[0].eventId).to.be.a('number');",
+              "});",
+              "",
+              "pm.test('Event 2: LIKE ADD', () => {",
+              "    pm.expect(feed[1].userId).to.eql(user1Id);",
+              "    pm.expect(feed[1].eventType).to.eql('LIKE');",
+              "    pm.expect(feed[1].operation).to.eql('ADD');",
+              "    pm.expect(feed[1].entityId).to.eql(filmId);",
+              "});",
+              "",
+              "pm.test('Event 3: LIKE REMOVE', () => {",
+              "    pm.expect(feed[2].userId).to.eql(user1Id);",
+              "    pm.expect(feed[2].eventType).to.eql('LIKE');",
+              "    pm.expect(feed[2].operation).to.eql('REMOVE');",
+              "    pm.expect(feed[2].entityId).to.eql(filmId);",
+              "});",
+              "",
+              "pm.test('Event 4: FRIEND REMOVE', () => {",
+              "    pm.expect(feed[3].userId).to.eql(user1Id);",
+              "    pm.expect(feed[3].eventType).to.eql('FRIEND');",
+              "    pm.expect(feed[3].operation).to.eql('REMOVE');",
+              "    pm.expect(feed[3].entityId).to.eql(user2Id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/users/{{user1Id}}/feed"
+      }
+    },
+    {
+      "name": "9. Get Feed for Unknown User (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Unknown user returns 404', () => pm.response.to.have.status(404));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/users/999999/feed"
+      }
+    }
+  ]
+}
