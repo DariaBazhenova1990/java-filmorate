@@ -11,7 +11,7 @@ public class StringToSearchByConverter implements Converter<String, SearchBy> {
 
     @Override
     public SearchBy convert(String source) {
-        log.info("Конвертируем параметр: '{}'", source);
+        log.debug("Конвертируем параметр: '{}'", source);
         return SearchBy.valueOf(source.trim().toUpperCase());
     }
 }

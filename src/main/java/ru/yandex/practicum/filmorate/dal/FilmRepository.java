@@ -378,7 +378,7 @@ public class FilmRepository extends BaseRepository<Film> {
                 "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
                 "WHERE (" + String.join(" OR ", conditions) + ") " +
                 "GROUP BY f.id, m.name " +
-                "ORDER BY COUNT(fl.user_id) DESC";
+                "ORDER BY COUNT(DISTINCT fl.user_id) DESC";
 
         List<Film> films = jdbcTemplate.query(sql, mapper, params.toArray());
 
