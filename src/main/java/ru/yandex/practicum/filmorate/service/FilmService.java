@@ -287,4 +287,21 @@ public class FilmService {
 
     }
 
+    public void delete(long id) {
+        log.info("Получен запрос на удаление фильма с id = {}", id);
+
+        if (id <= 0) {
+            log.warn("Ошибка валидации при удалении: id должен быть указан");
+            throw new ValidationException("Id для удаления должен быть указан");
+        }
+
+        boolean isDeleted = filmRepository.delete(id);
+
+        if (!isDeleted) {
+            log.warn("Ошибка удаления: фильм с id = {} не найден", id);
+            throw new NotFoundException("Фильм с id = " + id + " не найден");
+        }
+
+        log.info("Фильм с id = {} успешно удален", id);
+    }
 }

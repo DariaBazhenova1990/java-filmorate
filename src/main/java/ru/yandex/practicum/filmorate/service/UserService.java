@@ -129,4 +129,21 @@ public class UserService {
         }
     }
 
+    public void delete(long id) {
+        log.info("Получен запрос на удаление пользователя с id = {}", id);
+
+        if (id <= 0) {
+            log.warn("Ошибка валидации при удалении: id должен быть указан");
+            throw new ValidationException("Id для удаления должен быть указан");
+        }
+
+        boolean isDeleted = userRepository.delete(id);
+
+        if (!isDeleted) {
+            log.warn("Ошибка удаления: пользователь с id = {} не найден", id);
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
+        }
+
+        log.info("Пользователь с id = {} успешно удален", id);
+    }
 }

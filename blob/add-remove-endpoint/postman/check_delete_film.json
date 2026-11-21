@@ -1,0 +1,187 @@
+{
+  "info": {
+    "name": "Filmorate Delete Film",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Create Film",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.collectionVariables.set('filmId', pm.response.json().id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Delete Test Film\",\n  \"description\": \"Film description for delete test\",\n  \"releaseDate\": \"2000-05-15\",\n  \"duration\": 120,\n  \"mpa\": {\n    \"id\": 1\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/films",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "films"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2. Delete Film 200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/films/{{filmId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "films",
+            "{{filmId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3. Get Deleted Film 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Not Found 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/films/{{filmId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "films",
+            "{{filmId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "4. Delete Film Again 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Not Found 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/films/{{filmId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "films",
+            "{{filmId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "5. Delete Negative Film ID 400",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Bad Request 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/films/-1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "films",
+            "-1"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "filmId",
+      "value": "1"
+    }
+  ]
+}
