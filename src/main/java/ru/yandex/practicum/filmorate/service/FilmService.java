@@ -16,6 +16,7 @@ import ru.yandex.practicum.filmorate.mapper.FilmMapper;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.SearchBy;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -285,6 +286,18 @@ public class FilmService {
                 .map(FilmMapper::mapToFilmDto)
                 .toList();
 
+    }
+
+    public List<FilmDto> searchFilms(String query, List<SearchBy> by) {
+        log.info("Поиск фильма по ключевому слову {} и по критерию {}", query, by);
+        if (query == null || query.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return filmRepository.searchFilms(query, by)
+                .stream()
+                .map(FilmMapper::mapToFilmDto)
+                .toList();
     }
 
     public void delete(long id) {

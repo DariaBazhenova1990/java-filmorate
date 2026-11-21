@@ -11,6 +11,7 @@ import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.SearchBy;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -353,6 +354,39 @@ public class FilmRepository extends BaseRepository<Film> {
         loadGenresToFilms(films);
         loadDirectorsToFilms(films);
         return loadUserLikesToFilms(films);
+    }
+
+    public List<Film> searchFilms(String query, List<SearchBy> by) {
+        String searchQuery = "%" + query.toLowerCase() + "%";
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (by.contains(SearchBy.TITLE)) {
+            conditions.add("LOWER(f.name) LIKE ?");
+            params.add(searchQuery);
+        }
+        if (by.contains(SearchBy.DIRECTOR)) {
+            conditions.add("LOWER(d.name) LIKE ?");
+            params.add(searchQuery);
+        }
+
+        String sql = "SELECT f.*, m.name AS mpa_name " +
+                "FROM films f " +
+                "LEFT JOIN mpa m ON f.mpa_id = m.id " +
+                "LEFT JOIN film_directors fd ON f.id = fd.film_id " +
+                "LEFT JOIN directors d ON fd.director_id = d.id " +
+                "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
+                "WHERE (" + String.join(" OR ", conditions) + ") " +
+                "GROUP BY f.id, m.name " +
+                "ORDER BY COUNT(DISTINCT fl.user_id) DESC";
+
+        List<Film> films = jdbcTemplate.query(sql, mapper, params.toArray());
+
+        loadDirectorsToFilms(films);
+        loadGenresToFilms(films);
+        loadUserLikesToFilms(films);
+
+        return films;
     }
 
     public boolean delete(long id) {
