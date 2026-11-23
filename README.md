@@ -13,6 +13,8 @@
 * `film_genres` — таблица связей many-to-many между фильмами и жанрами.
 * `film_likes` — таблица связей many-to-many для хранения лайков от пользователей к фильмам.
 * `friends` — таблица связей между пользователями.
+* `reviews` — отзывы пользователей на фильмы.
+* `review_likes` — лайки и дизлайки отзывов (рейтинг полезности отзыва).
 
 #### 1. Таблица `users` (Пользователи)
 
@@ -70,6 +72,26 @@
 | `user_id` (PK, FK)   | BIGINT     | Идентификатор инициатора дружбы (ссылка на `users.id`)          |
 | `friend_id` (PK, FK) | BIGINT     | Идентификатор подтверждающего друга (ссылка на `users.id`)      |
 
+#### 8. Таблица `reviews` (Отзывы)
+
+| Поле                | Тип данных | Описание                                          |
+|:--------------------|:-----------|:--------------------------------------------------|
+| `id` (PK)           | BIGINT     | Уникальный идентификатор отзыва                   |
+| `content`           | VARCHAR    | Текст отзыва                                      |
+| `is_positive`       | BOOLEAN    | Тип отзыва: положительный / негативный            |
+| `user_id` (FK)      | BIGINT     | Автор отзыва (ссылка на `users.id`)               |
+| `film_id` (FK)      | BIGINT     | Фильм, к которому относится отзыв (`films.id`)    |
+
+Рейтинг полезности `useful` в таблице не хранится, а вычисляется: количество лайков минус количество дизлайков.
+
+#### 9. Таблица `review_likes` (Оценки отзывов)
+
+| Поле                  | Тип данных | Описание                                        |
+|:----------------------|:-----------|:------------------------------------------------|
+| `review_id` (PK, FK)  | BIGINT     | Идентификатор отзыва (ссылка на `reviews.id`)   |
+| `user_id` (PK, FK)    | BIGINT     | Кто оценил (ссылка на `users.id`)               |
+| `is_like`             | BOOLEAN    | `true` — лайк (+1), `false` — дизлайк (−1)      |
+
 
 ## Примеры запросов
 ```
@@ -103,4 +125,14 @@ INSERT INTO film_genres (film_id, genre_id)
 VALUES (?, ?);
 
 DELETE FROM film_genres WHERE film_id = ?;
+
+-- отзывы: рейтинг полезности = лайки - дизлайки
+SELECT r.id, r.content, r.is_positive, r.user_id, r.film_id,
+       COALESCE(SUM(CASE WHEN rl.is_like THEN 1 WHEN rl.is_like = FALSE THEN -1 ELSE 0 END), 0) AS useful
+FROM reviews r
+LEFT JOIN review_likes rl ON r.id = rl.review_id
+WHERE r.film_id = ?
+GROUP BY r.id
+ORDER BY useful DESC
+LIMIT ?;
 ```
