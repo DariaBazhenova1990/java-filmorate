@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.dal.FilmRepository;
 import ru.yandex.practicum.filmorate.dal.ReviewRepository;
 import ru.yandex.practicum.filmorate.dal.UserRepository;
@@ -14,7 +15,6 @@ import ru.yandex.practicum.filmorate.mapper.ReviewMapper;
 import ru.yandex.practicum.filmorate.model.Review;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -65,9 +65,10 @@ public class ReviewService {
             checkFilmExists(filmId);
             reviews = reviewRepository.findByFilmId(filmId, count);
         }
-        return reviews.stream().map(ReviewMapper::mapToReviewDto).collect(Collectors.toList());
+        return reviews.stream().map(ReviewMapper::mapToReviewDto).toList();
     }
 
+    @Transactional
     public ReviewDto addReaction(long id, long userId, boolean isLike) {
         log.info("Пользователь {} ставит {} отзыву {}", userId, isLike ? "лайк" : "дизлайк", id);
         getReviewOrThrow(id);
@@ -76,11 +77,12 @@ public class ReviewService {
         return ReviewMapper.mapToReviewDto(getReviewOrThrow(id));
     }
 
-    public ReviewDto removeReaction(long id, long userId, boolean isLike) {
-        log.info("Пользователь {} удаляет {} у отзыва {}", userId, isLike ? "лайк" : "дизлайк", id);
+    @Transactional
+    public ReviewDto removeReaction(long id, long userId) {
+        log.info("Пользователь {} удаляет свою оценку у отзыва {}", userId, id);
         getReviewOrThrow(id);
         checkUserExists(userId);
-        reviewRepository.removeReaction(id, userId, isLike);
+        reviewRepository.removeReaction(id, userId);
         return ReviewMapper.mapToReviewDto(getReviewOrThrow(id));
     }
 

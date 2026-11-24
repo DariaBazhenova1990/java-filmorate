@@ -12,18 +12,13 @@ import java.util.Optional;
 
 @Repository
 public class ReviewRepository extends BaseRepository<Review> {
-    // useful = (количество лайков) - (количество дизлайков)
-    private static final String SELECT_WITH_USEFUL =
-            "SELECT r.id, r.content, r.is_positive, r.user_id, r.film_id, " +
-                    "COALESCE(SUM(CASE WHEN rl.is_like THEN 1 WHEN rl.is_like = FALSE THEN -1 ELSE 0 END), 0) AS useful " +
-                    "FROM reviews r " +
-                    "LEFT JOIN review_likes rl ON r.id = rl.review_id ";
-    private static final String GROUP_ORDER_LIMIT =
-            "GROUP BY r.id ORDER BY useful DESC, r.id ASC LIMIT ?";
-
-    private static final String FIND_BY_ID_QUERY = SELECT_WITH_USEFUL + "WHERE r.id = ? GROUP BY r.id";
-    private static final String FIND_ALL_QUERY = SELECT_WITH_USEFUL + GROUP_ORDER_LIMIT;
-    private static final String FIND_BY_FILM_QUERY = SELECT_WITH_USEFUL + "WHERE r.film_id = ? " + GROUP_ORDER_LIMIT;
+    // useful хранится в таблице reviews: при создании 0, при лайке/дизлайке пересчитывается для одного отзыва
+    private static final String SELECT_REVIEW =
+            "SELECT id, content, is_positive, user_id, film_id, useful FROM reviews ";
+    private static final String FIND_BY_ID_QUERY = SELECT_REVIEW + "WHERE id = ?";
+    private static final String FIND_ALL_QUERY = SELECT_REVIEW + "ORDER BY useful DESC, id ASC LIMIT ?";
+    private static final String FIND_BY_FILM_QUERY =
+            SELECT_REVIEW + "WHERE film_id = ? ORDER BY useful DESC, id ASC LIMIT ?";
 
     private static final String INSERT_QUERY =
             "INSERT INTO reviews(content, is_positive, user_id, film_id) VALUES (?, ?, ?, ?);";
@@ -34,7 +29,12 @@ public class ReviewRepository extends BaseRepository<Review> {
     private static final String SET_REACTION_QUERY =
             "MERGE INTO review_likes (review_id, user_id, is_like) KEY (review_id, user_id) VALUES (?, ?, ?);";
     private static final String REMOVE_REACTION_QUERY =
-            "DELETE FROM review_likes WHERE review_id = ? AND user_id = ? AND is_like = ?;";
+            "DELETE FROM review_likes WHERE review_id = ? AND user_id = ?;";
+    private static final String RECALCULATE_USEFUL_QUERY =
+            "UPDATE reviews SET useful = (" +
+                    "SELECT COALESCE(SUM(CASE WHEN is_like THEN 1 ELSE -1 END), 0) " +
+                    "FROM review_likes WHERE review_id = ?) " +
+                    "WHERE id = ?;";
 
     public ReviewRepository(JdbcTemplate jdbc, RowMapper<Review> mapper) {
         super(jdbc, mapper, Review.class);
@@ -75,9 +75,15 @@ public class ReviewRepository extends BaseRepository<Review> {
 
     public void setReaction(long reviewId, long userId, boolean isLike) {
         jdbc.update(SET_REACTION_QUERY, reviewId, userId, isLike);
+        recalculateUseful(reviewId);
     }
 
-    public void removeReaction(long reviewId, long userId, boolean isLike) {
-        jdbc.update(REMOVE_REACTION_QUERY, reviewId, userId, isLike);
+    public void removeReaction(long reviewId, long userId) {
+        jdbc.update(REMOVE_REACTION_QUERY, reviewId, userId);
+        recalculateUseful(reviewId);
+    }
+
+    private void recalculateUseful(long reviewId) {
+        jdbc.update(RECALCULATE_USEFUL_QUERY, reviewId, reviewId);
     }
 }

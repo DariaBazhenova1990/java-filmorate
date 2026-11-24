@@ -130,7 +130,7 @@ class ReviewRepositoryTests {
         assertThat(reviewRepository.findById(r1.getReviewId()).orElseThrow().getUseful()).isEqualTo(1);
 
         // удаление лайка возвращает рейтинг к нулю
-        reviewRepository.removeReaction(r1.getReviewId(), u1.getId(), true);
+        reviewRepository.removeReaction(r1.getReviewId(), u1.getId());
         assertThat(reviewRepository.findById(r1.getReviewId()).orElseThrow().getUseful()).isZero();
     }
 

@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS reviews (
     is_positive BOOLEAN NOT NULL,
     user_id BIGINT NOT NULL,
     film_id BIGINT NOT NULL,
+    useful INTEGER DEFAULT 0 NOT NULL,
     CONSTRAINT fk_reviews_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_reviews_film FOREIGN KEY (film_id) REFERENCES films(id) ON DELETE CASCADE,
     CONSTRAINT check_review_content_not_blank CHECK (TRIM(content) <> '')
