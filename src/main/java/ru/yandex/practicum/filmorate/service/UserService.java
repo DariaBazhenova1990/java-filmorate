@@ -11,6 +11,8 @@ import ru.yandex.practicum.filmorate.dto.UserDto.UserDto;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.mapper.UserMapper;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.ArrayList;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserRepository userRepository;
     private final FriendRepository friendRepository;
+    private final FeedService feedService;
 
     public Collection<UserDto> getAll() {
         log.info("Получение списка всех пользователей");
@@ -80,6 +83,7 @@ public class UserService {
         log.info("Получен запрос на добавление в друзья. ID пользователя: {}. ID друга: {}", id, friendId);
         isValidUserPair(id, friendId);
         friendRepository.doFriends(id, friendId);
+        feedService.addEvent(id, EventType.FRIEND, Operation.ADD, friendId);
         log.info("Заявка в друзья отправлена. ID пользователя: {}. ID друга: {}", id, friendId);
     }
 
@@ -87,6 +91,7 @@ public class UserService {
         log.info("Получен запрос на удаление из друзей. ID пользователя: {}. ID друга: {}", id, friendId);
         isValidUserPair(id, friendId);
         friendRepository.undoFriends(id, friendId);
+        feedService.addEvent(id, EventType.FRIEND, Operation.REMOVE, friendId);
         log.info("Запрос на удаление из друзей исполнен. ID пользователя: {}. ID друга: {}", id, friendId);
     }
 

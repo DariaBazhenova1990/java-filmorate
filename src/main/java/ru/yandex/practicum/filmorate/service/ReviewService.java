@@ -12,6 +12,8 @@ import ru.yandex.practicum.filmorate.dto.ReviewDto.ReviewDto;
 import ru.yandex.practicum.filmorate.dto.ReviewDto.UpdateReviewRequest;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.mapper.ReviewMapper;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.Review;
 
 import java.util.List;
@@ -23,6 +25,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final FilmRepository filmRepository;
     private final UserRepository userRepository;
+    private final FeedService feedService;
 
     public ReviewDto create(NewReviewRequest request) {
         log.info("Получен запрос на добавление отзыва. Фильм: {}, пользователь: {}",
@@ -31,6 +34,7 @@ public class ReviewService {
         checkFilmExists(request.getFilmId());
 
         Review review = reviewRepository.create(ReviewMapper.mapToReview(request));
+        feedService.addEvent(review.getUserId(), EventType.REVIEW, Operation.ADD, review.getReviewId());
         log.info("Отзыв успешно добавлен. Присвоен ID: {}", review.getReviewId());
         return ReviewMapper.mapToReviewDto(review);
     }
@@ -40,14 +44,16 @@ public class ReviewService {
         log.info("Получен запрос на обновление отзыва с ID: {}", id);
         Review review = getReviewOrThrow(id);
         review = reviewRepository.update(ReviewMapper.updateReviewFields(review, request));
+        feedService.addEvent(review.getUserId(), EventType.REVIEW, Operation.UPDATE, review.getReviewId());
         log.info("Отзыв с ID: {} успешно обновлен", id);
         return ReviewMapper.mapToReviewDto(review);
     }
 
     public void delete(long id) {
         log.info("Получен запрос на удаление отзыва с ID: {}", id);
-        getReviewOrThrow(id);
+        Review review = getReviewOrThrow(id);
         reviewRepository.deleteById(id);
+        feedService.addEvent(review.getUserId(), EventType.REVIEW, Operation.REMOVE, review.getReviewId());
         log.info("Отзыв с ID: {} удален", id);
     }
 
