@@ -14,7 +14,6 @@ import ru.yandex.practicum.filmorate.model.Operation;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -31,7 +30,7 @@ public class FeedService {
         return feedRepository.findByUserId(userId)
                 .stream()
                 .map(EventMapper::mapToEventDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public void addEvent(long userId, EventType eventType, Operation operation, long entityId) {
