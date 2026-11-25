@@ -80,6 +80,14 @@ public class FilmRepository extends BaseRepository<Film> {
             DELETE FROM films
             WHERE id = ?
             """;
+    private static final String FIND_COMMON_FILMS_QUERY =
+            "SELECT f.*, m.name AS mpa_name FROM films f " +
+                    "JOIN mpa m ON f.mpa_id = m.id " +
+                    "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
+                    "WHERE f.id IN (SELECT film_id FROM film_likes WHERE user_id = ?) " +
+                    "AND f.id IN (SELECT film_id FROM film_likes WHERE user_id = ?) " +
+                    "GROUP BY f.id, m.name " +
+                    "ORDER BY COUNT(DISTINCT fl.user_id) DESC";
 
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final JdbcTemplate jdbcTemplate;
@@ -186,6 +194,13 @@ public class FilmRepository extends BaseRepository<Film> {
         params.add(count);
 
         List<Film> films = findMany(sql.toString(), params.toArray());
+        loadGenresToFilms(films);
+        loadDirectorsToFilms(films);
+        return loadUserLikesToFilms(films);
+    }
+
+    public List<Film> getCommonFilms(long userId, long friendId) {
+        List<Film> films = findMany(FIND_COMMON_FILMS_QUERY, userId, friendId);
         loadGenresToFilms(films);
         loadDirectorsToFilms(films);
         return loadUserLikesToFilms(films);
