@@ -43,7 +43,7 @@ public class FilmRepository extends BaseRepository<Film> {
     private static final String UPDATE_QUERY =
             "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE id = ?;";
     private static final String ADD_LIKE_QUERY =
-            "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?);";
+            "MERGE INTO film_likes (film_id, user_id) VALUES (?, ?);";
     private static final String FIND_ALL_LIKES_QUERY =
             "SELECT user_id, film_id FROM film_likes;";
     private static final String REMOVE_LIKE_QUERY =

@@ -103,15 +103,13 @@ public class FilmMapper {
         if (filmUpdate.hasDuration()) {
             film.setDuration(filmUpdate.getDuration());
         }
-        if (filmUpdate.hasGenres() && filmUpdate.getGenres() != null) {
-            film.setGenres(filmUpdate.getGenres().stream()
-                    .map(genreDto -> {
-                        Genre genre = new Genre();
-                        genre.setId(genreDto.getId());
-                        return genre;
-                    })
-                    .collect(Collectors.toSet()));
-        }
+        film.setGenres(filmUpdate.getGenres().stream()
+                .map(genreDto -> {
+                    Genre genre = new Genre();
+                    genre.setId(genreDto.getId());
+                    return genre;
+                })
+                .collect(Collectors.toSet()));
         if (filmUpdate.hasDirectors() && filmUpdate.getDirectors() != null) {
             film.setDirectors(filmUpdate.getDirectors().stream()
                     .map(directorDto -> {

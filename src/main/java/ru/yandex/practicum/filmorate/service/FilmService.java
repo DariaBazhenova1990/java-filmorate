@@ -116,10 +116,7 @@ public class FilmService {
                     return new NotFoundException("Фильм с id = " + filmId + " не найден");
                 });
 
-        List<Genre> genres = null;
-        if (updateRequest.hasGenres()) {
-            genres = checkAndGetGenres(updateRequest.getGenres());
-        }
+        List<Genre> genres = checkAndGetGenres(updateRequest.getGenres());
 
         List<Director> directors = null;
         if (updateRequest.hasDirectors()) {
@@ -127,13 +124,9 @@ public class FilmService {
         }
 
         film = FilmMapper.updateFilmFields(film, updateRequest);
-        film = filmRepository.update(film);
-
-        if (updateRequest.hasGenres()) {
-            film = filmGenresRepository.update(film, genres);
-        }
-
+        film = filmGenresRepository.update(film, genres);
         film = filmDirectorsRepository.update(film, directors);
+        film = filmRepository.update(film);
 
         log.info("Фильм с ID: {} успешно обновлен", film.getId());
 
