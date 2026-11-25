@@ -192,6 +192,25 @@ public class FilmService {
                 .collect(Collectors.toList());
     }
 
+    public List<FilmDto> getCommonFilms(long userId, long friendId) {
+        log.info("Получение общих фильмов пользователей с ID {} и {}", userId, friendId);
+
+        if (userRepository.findById(userId).isEmpty()) {
+            log.warn("Ошибка поиска: пользователь с ID {} не найден", userId);
+            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
+        }
+
+        if (userRepository.findById(friendId).isEmpty()) {
+            log.warn("Ошибка поиска: пользователь с ID {} не найден", friendId);
+            throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
+        }
+
+        return filmRepository.getCommonFilms(userId, friendId)
+                .stream()
+                .map(FilmMapper::mapToFilmDto)
+                .collect(Collectors.toList());
+    }
+
     public FilmDto getFilmById(int id) {
         Film film = filmRepository.findById(id)
                 .orElseThrow(() -> {
