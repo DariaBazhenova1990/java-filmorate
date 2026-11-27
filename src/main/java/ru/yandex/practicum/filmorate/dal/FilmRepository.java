@@ -22,8 +22,6 @@ public class FilmRepository extends BaseRepository<Film> {
             "SELECT f.*, m.name AS mpa_name FROM films f JOIN mpa m ON f.mpa_id = m.id;";
     private static final String FIND_BY_ID_QUERY =
             "SELECT f.*, m.name AS mpa_name FROM films f JOIN mpa m ON f.mpa_id = m.id WHERE f.id = ?;";
-    private static final String FIND_BY_FILMS_ID_QUERY =
-            "SELECT f.*, m.name AS mpa_name FROM films f JOIN mpa m ON f.mpa_id = m.id WHERE f.id IN (:filmIds);";
     private static final String FIND_BY_DIRECTOR_SORT_BY_YEAR_QUERY =
             "SELECT f.*, m.name AS mpa_name FROM films f " +
                     "JOIN mpa m ON f.mpa_id = m.id " +
@@ -44,8 +42,6 @@ public class FilmRepository extends BaseRepository<Film> {
             "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE id = ?;";
     private static final String ADD_LIKE_QUERY =
             "MERGE INTO film_likes (film_id, user_id) VALUES (?, ?);";
-    private static final String FIND_ALL_LIKES_QUERY =
-            "SELECT user_id, film_id FROM film_likes;";
     private static final String REMOVE_LIKE_QUERY =
             "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?;";
     private static final String FIND_GENRES_BY_FILMS_ID_QUERY =
@@ -88,6 +84,36 @@ public class FilmRepository extends BaseRepository<Film> {
                     "AND f.id IN (SELECT film_id FROM film_likes WHERE user_id = ?) " +
                     "GROUP BY f.id, m.name " +
                     "ORDER BY COUNT(DISTINCT fl.user_id) DESC";
+
+    private static final String FIND_RECOMMENDATIONS_QUERY = """
+            WITH target_likes AS (
+            SELECT film_id
+            FROM film_likes
+            WHERE user_id = :userId
+            ),
+            recommendations AS (
+            SELECT
+            candidate_like.film_id,
+            COUNT(*) AS score
+            FROM target_likes target
+            JOIN film_likes other_user_like
+            ON other_user_like.film_id = target.film_id
+            AND other_user_like.user_id <> :userId
+            JOIN film_likes candidate_like
+            ON candidate_like.user_id = other_user_like.user_id
+            WHERE NOT EXISTS (
+            SELECT 1
+            FROM target_likes own
+            WHERE own.film_id = candidate_like.film_id
+            )
+            GROUP BY candidate_like.film_id
+            )
+            SELECT f.*, r.score, m.name AS mpa_name
+            FROM recommendations r
+            JOIN films f ON f.id = r.film_id
+            JOIN mpa m ON f.mpa_id = m.id
+            ORDER BY r.score DESC, f.id ASC;
+            """;
 
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final JdbcTemplate jdbcTemplate;
@@ -345,32 +371,6 @@ public class FilmRepository extends BaseRepository<Film> {
         return films;
     }
 
-    public Map<Long, Set<Long>> getAllUserLikes() {
-        Map<Long, Set<Long>> userLikes = new HashMap<>();
-
-        jdbcTemplate.query(FIND_ALL_LIKES_QUERY, rs -> {
-            long userId = rs.getLong("user_id");
-            long filmId = rs.getLong("film_id");
-            userLikes.computeIfAbsent(userId, k -> new HashSet<>()).add(filmId);
-        });
-
-        return userLikes;
-    }
-
-    public List<Film> getFilmsByIds(List<Long> filmIds) {
-        if (filmIds == null || filmIds.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        MapSqlParameterSource parameters = new MapSqlParameterSource("filmIds", filmIds);
-
-        List<Film> films = namedParameterJdbcTemplate.query(FIND_BY_FILMS_ID_QUERY, parameters, mapper);
-
-        loadGenresToFilms(films);
-        loadDirectorsToFilms(films);
-        return loadUserLikesToFilms(films);
-    }
-
     public List<Film> searchFilms(String query, List<SearchBy> by) {
         String searchQuery = "%" + query.toLowerCase() + "%";
         List<String> conditions = new ArrayList<>();
@@ -407,5 +407,13 @@ public class FilmRepository extends BaseRepository<Film> {
     public boolean delete(long id) {
         int rowsAffected = jdbcTemplate.update(DELETE_QUERY, id);
         return rowsAffected > 0;
+    }
+
+    public List<Film> getRecommendations(long userId) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource("userId", userId);
+        List<Film> films = namedParameterJdbcTemplate.query(FIND_RECOMMENDATIONS_QUERY, parameters, mapper);
+        loadGenresToFilms(films);
+        loadDirectorsToFilms(films);
+        return loadUserLikesToFilms(films);
     }
 }
