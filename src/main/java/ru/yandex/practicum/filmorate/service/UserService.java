@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dal.FriendRepository;
@@ -10,6 +11,8 @@ import ru.yandex.practicum.filmorate.dto.UserDto.UserDto;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.mapper.UserMapper;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.ArrayList;
@@ -20,14 +23,11 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final FriendRepository friendRepository;
-
-    public UserService(UserRepository userRepository, FriendRepository friendRepository) {
-        this.userRepository = userRepository;
-        this.friendRepository = friendRepository;
-    }
+    private final FeedService feedService;
 
     public Collection<UserDto> getAll() {
         log.info("Получение списка всех пользователей");
@@ -83,6 +83,7 @@ public class UserService {
         log.info("Получен запрос на добавление в друзья. ID пользователя: {}. ID друга: {}", id, friendId);
         isValidUserPair(id, friendId);
         friendRepository.doFriends(id, friendId);
+        feedService.addEvent(id, EventType.FRIEND, Operation.ADD, friendId);
         log.info("Заявка в друзья отправлена. ID пользователя: {}. ID друга: {}", id, friendId);
     }
 
@@ -90,6 +91,7 @@ public class UserService {
         log.info("Получен запрос на удаление из друзей. ID пользователя: {}. ID друга: {}", id, friendId);
         isValidUserPair(id, friendId);
         friendRepository.undoFriends(id, friendId);
+        feedService.addEvent(id, EventType.FRIEND, Operation.REMOVE, friendId);
         log.info("Запрос на удаление из друзей исполнен. ID пользователя: {}. ID друга: {}", id, friendId);
     }
 
@@ -114,7 +116,7 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    private void isValidUserPair(long id, long friendId) {
+    protected void isValidUserPair(long id, long friendId) {
         Optional<User> user = userRepository.findById(id);
         Optional<User> friend = userRepository.findById(friendId);
 
@@ -130,5 +132,23 @@ public class UserService {
             log.warn("Ошибка бизнес-логики: пользователи {} и {} не уникальны", id, friendId);
             throw new ValidationException("Пользователи не уникальны. Переданные ID: " + id + ", " + friendId);
         }
+    }
+
+    public void delete(long id) {
+        log.info("Получен запрос на удаление пользователя с id = {}", id);
+
+        if (id <= 0) {
+            log.warn("Ошибка валидации при удалении: id должен быть указан");
+            throw new ValidationException("Id для удаления должен быть указан");
+        }
+
+        boolean isDeleted = userRepository.delete(id);
+
+        if (!isDeleted) {
+            log.warn("Ошибка удаления: пользователь с id = {} не найден", id);
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
+        }
+
+        log.info("Пользователь с id = {} успешно удален", id);
     }
 }

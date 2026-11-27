@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dal.GenreRepository;
 import ru.yandex.practicum.filmorate.dto.GenreDto;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
-import ru.yandex.practicum.filmorate.mapper.GengeMapper;
+import ru.yandex.practicum.filmorate.mapper.GenreMapper;
 import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.util.List;
@@ -24,7 +24,7 @@ public class GenreService {
         log.info("Получение списка всех жанров");
         return genreRepository.getAllGenres()
                 .stream()
-                .map(GengeMapper::mapToGenreDto)
+                .map(GenreMapper::mapToGenreDto)
                 .collect(Collectors.toList());
     }
 
@@ -35,6 +35,6 @@ public class GenreService {
                             return new NotFoundException("Жанр с id = " + id + " не найден");
                         }
                 );
-        return GengeMapper.mapToGenreDto(genre);
+        return GenreMapper.mapToGenreDto(genre);
     }
 }
