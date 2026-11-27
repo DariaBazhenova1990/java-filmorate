@@ -31,6 +31,7 @@ public class FilmService {
     private final DirectorRepository directorRepository;
     private final FilmDirectorsRepository filmDirectorsRepository;
     private final FeedService feedService;
+    private final UserService userService;
 
     public List<FilmDto> getAll() {
         log.info("Получение списка всех фильмов");
@@ -188,15 +189,7 @@ public class FilmService {
     public List<FilmDto> getCommonFilms(long userId, long friendId) {
         log.info("Получение общих фильмов пользователей с ID {} и {}", userId, friendId);
 
-        if (userRepository.findById(userId).isEmpty()) {
-            log.warn("Ошибка поиска: пользователь с ID {} не найден", userId);
-            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
-        }
-
-        if (userRepository.findById(friendId).isEmpty()) {
-            log.warn("Ошибка поиска: пользователь с ID {} не найден", friendId);
-            throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
-        }
+        userService.isValidUserPair(userId, friendId);
 
         return filmRepository.getCommonFilms(userId, friendId)
                 .stream()

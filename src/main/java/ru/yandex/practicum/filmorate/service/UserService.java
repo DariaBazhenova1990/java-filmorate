@@ -116,7 +116,7 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    private void isValidUserPair(long id, long friendId) {
+    protected void isValidUserPair(long id, long friendId) {
         Optional<User> user = userRepository.findById(id);
         Optional<User> friend = userRepository.findById(friendId);
 
